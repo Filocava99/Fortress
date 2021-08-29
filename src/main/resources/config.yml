@@ -1,0 +1,6 @@
+language: "en_US"
+# Durations in ticks
+delay-before-siege-kick: 20
+delay-before-siege-start: 0
+siege-duration: 20
+time-zone: "Europe/Rome"
