@@ -1,6 +1,10 @@
   name: "ARFortress"
   main: "it.ancientrealms.ARFortress"
   version: 1.0.0
+  depend:
+    - KotlinLib
+  softdepend:
+    - Towny
   commands:
     fortress:
       aliases: arfortress

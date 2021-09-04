@@ -13,5 +13,6 @@ class ReloadCommand : SubCommand() {
         sender?.sendMessage(ARFortress.INSTANCE.languageManager.getMessage("configs-reloaded"))
         ARFortress.INSTANCE.loadConfig()
         ARFortress.INSTANCE.loadData()
+        ARFortress.INSTANCE.languageManager.loadLanguage()
     }
 }

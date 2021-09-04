@@ -22,6 +22,7 @@ class SetHourCommand : SubCommand() {
                 it.besiegeHour = hour
             }
             ARFortress.INSTANCE.fortressesManager.saveFortresses()
+            sender?.sendMessage(ARFortress.INSTANCE.languageManager.getMessage("hour-set", args[2], fortressName))
         }catch (e: NumberFormatException){
             sender?.sendMessage(ARFortress.INSTANCE.languageManager.getMessage("invalid-hour-format"))
         }

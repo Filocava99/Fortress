@@ -12,12 +12,15 @@ import java.util.*
 
 class CreateCommand : SubCommand() {
 
-    override fun getPermission(): String? {
+    override fun getPermission(): String {
         return "fortress.admin.create"
     }
 
     override fun onCommand(sender: CommandSender?, cmd: Command?, label: String?, args: Array<out String>) {
         if(sender is Player){
+            if(args.size < 3){
+                sender.sendMessage(ARFortress.INSTANCE.languageManager.getMessage("create-invalid-parameters"))
+            }
             val player = sender as Player
             player.location.chunk.persistentDataContainer.set(NamespacedKeys.FORTRESS.namespacedKey,
                 PersistentDataType.STRING, args[1])
@@ -27,6 +30,8 @@ class CreateCommand : SubCommand() {
             ARFortress.INSTANCE.fortressesConfig.config.set(args[1], fortress)
             ARFortress.INSTANCE.fortressesConfig.save()
             sender.sendMessage(ARFortress.INSTANCE.languageManager.getMessage("fortress-created", args[1]))
+        }else{
+            sender?.sendMessage(ARFortress.INSTANCE.languageManager.getMessage("only-players-can-run-command"))
         }
     }
 }

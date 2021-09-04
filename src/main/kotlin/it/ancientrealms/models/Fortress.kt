@@ -16,7 +16,10 @@ data class Fortress(
     var owner: Government?,
     val chunk: Chunk,
     var besiegeHour: Int,
-    var lastTimeBesieged: String
+    var lastTimeBesieged: String,
+    val townUpkeepDiscount: Float = 0f,
+    val nationUpkeepDiscount: Float = 0f,
+    val onlyCapitalGetsBonus: Boolean = false
 ) : ConfigurationSerializable{
 
     fun canBeBesieged() : Boolean {
@@ -33,6 +36,9 @@ data class Fortress(
         data["besiege-hour"] = besiegeHour
         data["last-siege"] = lastTimeBesieged
         data["chunk"] = mapOf(Pair("x",chunk.x),Pair("z", chunk.z), Pair("world",chunk.world.uid.toString()))
+        data["town-upkeep-discount"] = townUpkeepDiscount
+        data["nation-upkeep-discount"] = nationUpkeepDiscount
+        data["only-capital-gets-bonus"] = onlyCapitalGetsBonus
         return data
     }
 
@@ -50,7 +56,10 @@ data class Fortress(
             val lastTimeBesieged: String = args["last-siege"] as String
             val world = Bukkit.getServer().getWorld(UUID.fromString((args["chunk"]as Map<*, *>)["world"] as String))!!
             val chunk = world.getChunkAt((args["chunk"]as Map<*, *>)["x"] as Int, (args["chunk"]as Map<*, *>)["z"] as Int)
-            return Fortress(name, owner, chunk, besiegeHour, lastTimeBesieged)
+            val townUpkeep = args["town-upkeep-discount"] as Float
+            val nationUpkeep = args["nation-upkeep-discount"] as Float
+            val onlyCapitalBonus = args["only-capital-gets-bonus"] as Boolean
+            return Fortress(name, owner, chunk, besiegeHour, lastTimeBesieged, townUpkeep, nationUpkeep, onlyCapitalBonus)
         }
     }
 }

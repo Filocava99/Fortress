@@ -1,10 +1,8 @@
 package it.ancientrealms
 
-import it.ancientrealms.command.CreateCommand
-import it.ancientrealms.command.MainCommand
-import it.ancientrealms.command.ReloadCommand
-import it.ancientrealms.command.SetHourCommand
+import it.ancientrealms.command.*
 import it.ancientrealms.listener.PlayerListener
+import it.ancientrealms.listener.TownyListener
 import it.ancientrealms.manager.FortressesManager
 import it.ancientrealms.manager.LanguageManager
 import it.ancientrealms.models.Fortress
@@ -51,13 +49,16 @@ class ARFortress : JavaPlugin() {
 
     private fun registerCommands() {
         val mainCommand = MainCommand()
-        MainCommand().addSubCommand(listOf("create"), CreateCommand())
-            .addSubCommand(listOf("reload"), ReloadCommand()).addSubCommand(listOf("setHour", "sethour", "sh"), SetHourCommand())
-            .register(this, "fortress", *emptyArray())
+        MainCommand().addSubCommand(listOf("create", "new"), CreateCommand())
+            .addSubCommand(listOf("reload"), ReloadCommand())
+            .addSubCommand(listOf("setHour", "sh"), SetHourCommand())
+            .addSubCommand(listOf("help","?"), HelpCommand())
+            .register(this, "fortress", "arfortress")
     }
 
     private fun registerListeners() {
         server.pluginManager.registerEvents(PlayerListener(), this)
+        server.pluginManager.registerEvents(TownyListener(), this)
     }
 
     companion object {

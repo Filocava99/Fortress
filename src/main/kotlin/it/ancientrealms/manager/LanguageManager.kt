@@ -12,9 +12,7 @@ class LanguageManager {
     private val messages = HashMap<String, String>()
 
     init {
-        Files.createDirectories(Paths.get(plugin.dataFolder.toPath().toString(), "lang/"))
-        val languageFile = Config("lang/" + plugin.pluginConfig.config.getString("language") + ".yml", plugin)
-        languageFile.config.getKeys(false).forEach { key -> messages[key] = languageFile.config.getString(key)!! }
+        loadLanguage()
     }
 
     fun getMessage(messageKey: String, vararg args: String): String {
@@ -23,6 +21,13 @@ class LanguageManager {
             message = message.replace("\${${index}}", arg)
         }
         return message
+    }
+
+    fun loadLanguage(){
+        messages.clear()
+        Files.createDirectories(Paths.get(plugin.dataFolder.toPath().toString(), "lang/"))
+        val languageFile = Config("lang/" + plugin.pluginConfig.config.getString("language") + ".yml", plugin)
+        languageFile.config.getKeys(false).forEach { key -> messages[key] = languageFile.config.getString(key)!! }
     }
 
 }
