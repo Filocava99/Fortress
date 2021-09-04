@@ -1,6 +1,6 @@
 package it.ancientrealms.manager
 
-import it.ancientrealms.ARFortress
+import it.ancientrealms.Fortress
 import it.tigierrei.configapi.Config
 import org.bukkit.ChatColor
 import java.nio.file.Files
@@ -8,7 +8,7 @@ import java.nio.file.Paths
 
 class LanguageManager {
 
-    private val plugin: ARFortress = ARFortress.INSTANCE
+    private val plugin: Fortress = Fortress.INSTANCE
     private val messages = HashMap<String, String>()
 
     init {

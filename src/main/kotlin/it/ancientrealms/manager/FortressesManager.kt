@@ -3,9 +3,8 @@ package it.ancientrealms.manager
 import com.palmergames.bukkit.towny.TownyUniverse
 import com.palmergames.bukkit.towny.`object`.Nation
 import com.palmergames.bukkit.towny.`object`.Town
-import it.ancientrealms.ARFortress
+import it.ancientrealms.Fortress
 import it.ancientrealms.exception.AlreadyOwnedFortress
-import it.ancientrealms.models.Fortress
 import it.ancientrealms.models.Siege
 import it.ancientrealms.utils.Utils
 import org.bukkit.Bukkit
@@ -13,13 +12,14 @@ import org.bukkit.entity.Player
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.*
+import it.ancientrealms.FortressModel
 
 class FortressesManager {
 
-    private val fortresses = HashSet<Fortress>()
-    private val fortressesByName = HashMap<String, Fortress>()
+    private val fortresses = HashSet<FortressModel>()
+    private val fortressesByName = HashMap<String, FortressModel>()
     private val ongoingSieges = HashMap<String, Siege>()
-    private val languageManager = ARFortress.INSTANCE.languageManager
+    private val languageManager = Fortress.INSTANCE.languageManager
 
     fun getFortresses() = Collections.unmodifiableSet(fortresses)
 
@@ -27,12 +27,12 @@ class FortressesManager {
 
     fun getFortress(name: String) = fortressesByName[name]
 
-    fun addFortress(name: String, fortress: Fortress) {
+    fun addFortress(name: String, fortress: FortressModel) {
         fortresses.add(fortress)
         fortressesByName[name] = fortress
     }
 
-    fun startSiege(fortress: Fortress, player: Player) {
+    fun startSiege(fortress: FortressModel, player: Player) {
         val resident = TownyUniverse.getInstance().getResident(player.name)
         resident?.let {
             val government = Utils.getGovernment(resident)
@@ -40,17 +40,17 @@ class FortressesManager {
                 if (fortress.owner == government) {
                     throw AlreadyOwnedFortress()
                 } else {
-                    val task = Bukkit.getScheduler().runTaskLaterAsynchronously(ARFortress.INSTANCE, Runnable {
+                    val task = Bukkit.getScheduler().runTaskLaterAsynchronously(Fortress.INSTANCE, Runnable {
                         fortress.owner = government
                         fortress.lastTimeBesieged = DateTimeFormatter.ofPattern("yyyy-MM-dd").format(
                             ZonedDateTime.now(
                                 TimeZone.getTimeZone(
-                                    ARFortress.INSTANCE.pluginConfig.config.getString("time-zone")
+                                    Fortress.INSTANCE.pluginConfig.config.getString("time-zone")
                                 ).toZoneId()
                             )
                         );
-                        ARFortress.INSTANCE.fortressesConfig.config.set(fortress.name, fortress)
-                        ARFortress.INSTANCE.fortressesConfig.save()
+                        Fortress.INSTANCE.fortressesConfig.config.set(fortress.name, fortress)
+                        Fortress.INSTANCE.fortressesConfig.save()
                         Bukkit.getServer().onlinePlayers.forEach { player ->
                             player.sendMessage(
                                 languageManager.getMessage(
@@ -72,7 +72,7 @@ class FortressesManager {
                                 )
                             }
                         }
-                    }, ARFortress.INSTANCE.pluginConfig.config.getLong("siege-duration"))
+                    }, Fortress.INSTANCE.pluginConfig.config.getLong("siege-duration"))
                     val siege = Siege(fortress, government, HashSet<UUID>(), task)
                     ongoingSieges[fortress.name] = siege
                     Bukkit.getServer().onlinePlayers.forEach { player ->
@@ -90,7 +90,7 @@ class FortressesManager {
         }
     }
 
-    fun endSiege(fortress: Fortress) {
+    fun endSiege(fortress: FortressModel) {
         val siege = ongoingSieges.remove(fortress.name)
         siege?.let {
             siege.timerTask.cancel()
@@ -108,16 +108,16 @@ class FortressesManager {
         }
     }
 
-    fun getSiege(fortress: Fortress) = ongoingSieges[fortress.name]
+    fun getSiege(fortress: FortressModel) = ongoingSieges[fortress.name]
 
-    fun isBesieged(fortress: Fortress) = ongoingSieges.contains(fortress.name)
+    fun isBesieged(fortress: FortressModel) = ongoingSieges.contains(fortress.name)
 
-    fun addParticipant(uuid: UUID, fortress: Fortress) {
+    fun addParticipant(uuid: UUID, fortress: FortressModel) {
         getSiege(fortress)?.participants?.add(uuid)
         Bukkit.getPlayer(uuid)?.sendMessage(languageManager.getMessage("attacker-join-notification", fortress.name))
     }
 
-    fun removeParticipant(uuid: UUID, fortress: Fortress) {
+    fun removeParticipant(uuid: UUID, fortress: FortressModel) {
         val siege = getSiege(fortress)
         siege?.let {
             val participants = getSiege(fortress)?.participants
@@ -130,7 +130,7 @@ class FortressesManager {
         }
     }
 
-    fun canPlayerSiege(player: Player, fortress: Fortress): Boolean {
+    fun canPlayerSiege(player: Player, fortress: FortressModel): Boolean {
         val resident = TownyUniverse.getInstance().getResident(player.name)
         val government = resident?.let { Utils.getGovernment(it) }
         government?.let {
@@ -143,8 +143,7 @@ class FortressesManager {
                     government == attackers
                 } else {
                     if (attackers is Nation) {
-                        val nation = government as Nation
-                        nation == attackers || (attackers as Nation).allies.contains(nation)
+                        government == attackers || attackers.allies.contains(government)
                     } else {
                         false
                     }
@@ -156,9 +155,9 @@ class FortressesManager {
 
     fun saveFortresses(){
         fortressesByName.forEach { (name, fortress) ->
-            ARFortress.INSTANCE.fortressesConfig.config.set(name, fortress)
+            Fortress.INSTANCE.fortressesConfig.config.set(name, fortress)
         }
-        ARFortress.INSTANCE.fortressesConfig.save()
+        Fortress.INSTANCE.fortressesConfig.save()
     }
 
 }

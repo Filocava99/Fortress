@@ -1,6 +1,6 @@
 package it.ancientrealms.command
 
-import it.ancientrealms.ARFortress
+import it.ancientrealms.Fortress
 import org.bukkit.command.Command
 import org.bukkit.command.CommandSender
 
@@ -10,9 +10,9 @@ class ReloadCommand : SubCommand() {
     }
 
     override fun onCommand(sender: CommandSender?, cmd: Command?, label: String?, args: Array<out String>) {
-        sender?.sendMessage(ARFortress.INSTANCE.languageManager.getMessage("configs-reloaded"))
-        ARFortress.INSTANCE.loadConfig()
-        ARFortress.INSTANCE.loadData()
-        ARFortress.INSTANCE.languageManager.loadLanguage()
+        sender?.sendMessage(Fortress.INSTANCE.languageManager.getMessage("configs-reloaded"))
+        Fortress.INSTANCE.loadConfig()
+        Fortress.INSTANCE.loadData()
+        Fortress.INSTANCE.languageManager.loadLanguage()
     }
 }

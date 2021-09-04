@@ -14,7 +14,7 @@ class MainCommand : CommandExecutor {
     override fun onCommand(sender: CommandSender, command: Command, label: String, args: Array<out String>): Boolean {
         var match = false
         if(args.isNotEmpty()){
-            subcommands.filterKeys { k -> k.contains(args[0].lowercase(Locale.getDefault())) }.forEach{ (k, v) ->
+            subcommands.filterKeys { k -> k.contains(args[0].lowercase(Locale.getDefault())) }.forEach{ (_, v) ->
                 run {
                     match = true
                     if(v.getPermission().isNullOrBlank() || sender.hasPermission(v.getPermission()!!) || sender.isOp){
@@ -26,7 +26,7 @@ class MainCommand : CommandExecutor {
             }
         }
         if(!match){
-            subcommands.filterKeys{ k -> k.contains("help") }.forEach { (k, v) -> v.runCommand(sender, command, label, args) }
+            subcommands.filterKeys{ k -> k.contains("help") }.forEach { (_, v) -> v.runCommand(sender, command, label, args) }
         }
         return true
     }

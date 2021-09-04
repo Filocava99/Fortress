@@ -1,6 +1,6 @@
 package it.ancientrealms.command
 
-import it.ancientrealms.ARFortress
+import it.ancientrealms.Fortress
 import org.bukkit.command.Command
 import org.bukkit.command.CommandSender
 
@@ -12,19 +12,19 @@ class SetHourCommand : SubCommand() {
 
     override fun onCommand(sender: CommandSender?, cmd: Command?, label: String?, args: Array<out String>) {
         if(args.size < 3){
-            sender?.sendMessage(ARFortress.INSTANCE.languageManager.getMessage("sethour-invalid-parameters"))
+            sender?.sendMessage(Fortress.INSTANCE.languageManager.getMessage("sethour-invalid-parameters"))
         }
         val fortressName = args[1]
         try {
             val hour = Integer.parseInt(args[2])
-            val fortress = ARFortress.INSTANCE.fortressesManager.getFortress(fortressName)
+            val fortress = Fortress.INSTANCE.fortressesManager.getFortress(fortressName)
             fortress?.let {
                 it.besiegeHour = hour
             }
-            ARFortress.INSTANCE.fortressesManager.saveFortresses()
-            sender?.sendMessage(ARFortress.INSTANCE.languageManager.getMessage("hour-set", args[2], fortressName))
+            Fortress.INSTANCE.fortressesManager.saveFortresses()
+            sender?.sendMessage(Fortress.INSTANCE.languageManager.getMessage("hour-set", args[2], fortressName))
         }catch (e: NumberFormatException){
-            sender?.sendMessage(ARFortress.INSTANCE.languageManager.getMessage("invalid-hour-format"))
+            sender?.sendMessage(Fortress.INSTANCE.languageManager.getMessage("invalid-hour-format"))
         }
     }
 }

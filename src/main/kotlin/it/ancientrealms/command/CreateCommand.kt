@@ -1,14 +1,14 @@
 package it.ancientrealms.command
 
-import it.ancientrealms.ARFortress
+import it.ancientrealms.Fortress
 import it.ancientrealms.NamespacedKeys
-import it.ancientrealms.models.Fortress
 import org.bukkit.command.Command
 import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
 import org.bukkit.persistence.PersistentDataType
 import java.text.SimpleDateFormat
 import java.util.*
+import it.ancientrealms.FortressModel
 
 class CreateCommand : SubCommand() {
 
@@ -19,19 +19,18 @@ class CreateCommand : SubCommand() {
     override fun onCommand(sender: CommandSender?, cmd: Command?, label: String?, args: Array<out String>) {
         if(sender is Player){
             if(args.size < 3){
-                sender.sendMessage(ARFortress.INSTANCE.languageManager.getMessage("create-invalid-parameters"))
+                sender.sendMessage(Fortress.INSTANCE.languageManager.getMessage("create-invalid-parameters"))
             }
-            val player = sender as Player
-            player.location.chunk.persistentDataContainer.set(NamespacedKeys.FORTRESS.namespacedKey,
+            sender.location.chunk.persistentDataContainer.set(NamespacedKeys.FORTRESS.namespacedKey,
                 PersistentDataType.STRING, args[1])
-            val fortress = Fortress(args[1], null, player.location.chunk, Integer.parseInt(args[2]),
+            val fortress = FortressModel(args[1], null, sender.location.chunk, Integer.parseInt(args[2]),
                 SimpleDateFormat("yyyy-MM-dd").format(Calendar.getInstance().time))
-            ARFortress.INSTANCE.fortressesManager.addFortress(args[1], fortress)
-            ARFortress.INSTANCE.fortressesConfig.config.set(args[1], fortress)
-            ARFortress.INSTANCE.fortressesConfig.save()
-            sender.sendMessage(ARFortress.INSTANCE.languageManager.getMessage("fortress-created", args[1]))
+            Fortress.INSTANCE.fortressesManager.addFortress(args[1], fortress)
+            Fortress.INSTANCE.fortressesConfig.config.set(args[1], fortress)
+            Fortress.INSTANCE.fortressesConfig.save()
+            sender.sendMessage(Fortress.INSTANCE.languageManager.getMessage("fortress-created", args[1]))
         }else{
-            sender?.sendMessage(ARFortress.INSTANCE.languageManager.getMessage("only-players-can-run-command"))
+            sender?.sendMessage(Fortress.INSTANCE.languageManager.getMessage("only-players-can-run-command"))
         }
     }
 }

@@ -1,20 +1,18 @@
 package it.ancientrealms.listener
 
-import it.ancientrealms.ARFortress
-import it.ancientrealms.NamespacedKeys
+import it.ancientrealms.Fortress
 import it.ancientrealms.utils.Utils
 import org.bukkit.Bukkit
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 import org.bukkit.event.player.PlayerMoveEvent
-import org.bukkit.persistence.PersistentDataType
 import org.bukkit.scheduler.BukkitTask
 import java.util.*
 import kotlin.collections.HashMap
 
 class PlayerListener() : Listener {
 
-    private val plugin = ARFortress.INSTANCE
+    private val plugin = Fortress.INSTANCE
     private val tasks = HashMap<UUID,BukkitTask>()
 
     @EventHandler
@@ -28,7 +26,7 @@ class PlayerListener() : Listener {
                 if(fortressesManager.isBesieged(it)){
                     val task = tasks.remove(player.uniqueId)
                     task?.cancel()
-                    tasks[player.uniqueId] = Bukkit.getScheduler().runTaskLaterAsynchronously(ARFortress.INSTANCE, Runnable {
+                    tasks[player.uniqueId] = Bukkit.getScheduler().runTaskLaterAsynchronously(Fortress.INSTANCE, Runnable {
                         if(player.location.chunk != it.chunk){
                             fortressesManager.removeParticipant(player.uniqueId, it)
                         }

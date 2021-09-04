@@ -4,6 +4,6 @@ import org.bukkit.NamespacedKey
 
 enum class NamespacedKeys(val namespacedKey: NamespacedKey) {
 
-    FORTRESS(NamespacedKey(ARFortress.INSTANCE,"fortress"))
+    FORTRESS(NamespacedKey(Fortress.INSTANCE,"fortress"))
 
 }

@@ -5,13 +5,14 @@ import it.ancientrealms.listener.PlayerListener
 import it.ancientrealms.listener.TownyListener
 import it.ancientrealms.manager.FortressesManager
 import it.ancientrealms.manager.LanguageManager
-import it.ancientrealms.models.Fortress
 import it.tigierrei.configapi.Config
 import org.bukkit.command.CommandExecutor
 import org.bukkit.configuration.serialization.ConfigurationSerialization
 import org.bukkit.plugin.java.JavaPlugin
 
-class ARFortress : JavaPlugin() {
+typealias FortressModel = it.ancientrealms.models.Fortress
+
+class Fortress : JavaPlugin() {
 
     lateinit var fortressesManager: FortressesManager
     lateinit var pluginConfig: Config
@@ -33,7 +34,7 @@ class ARFortress : JavaPlugin() {
     }
 
     private fun registerSerializableClasses() {
-        ConfigurationSerialization.registerClass(Fortress::class.java)
+        ConfigurationSerialization.registerClass(FortressModel::class.java)
     }
 
     fun loadConfig() {
@@ -43,12 +44,11 @@ class ARFortress : JavaPlugin() {
     fun loadData(){
         fortressesConfig = Config("fortresses.yml", this)
         fortressesConfig.config.getKeys(false)
-            .forEach { key -> fortressesManager.addFortress(key, fortressesConfig.config.get(key) as Fortress) }
+            .forEach { key -> fortressesManager.addFortress(key, fortressesConfig.config.get(key) as FortressModel) }
         fortressesManager.getFortresses().forEach { println(it.name + " " + it.lastTimeBesieged) }
     }
 
     private fun registerCommands() {
-        val mainCommand = MainCommand()
         MainCommand().addSubCommand(listOf("create", "new"), CreateCommand())
             .addSubCommand(listOf("reload"), ReloadCommand())
             .addSubCommand(listOf("setHour", "sh"), SetHourCommand())
@@ -62,11 +62,11 @@ class ARFortress : JavaPlugin() {
     }
 
     companion object {
-        private var plugin: ARFortress? = null
-        val INSTANCE: ARFortress
+        private var plugin: Fortress? = null
+        val INSTANCE: Fortress
             get() {
                 if (plugin == null) {
-                    plugin = getPlugin(ARFortress::class.java)
+                    plugin = getPlugin(Fortress::class.java)
                 }
                 return plugin!!
             }
@@ -74,6 +74,6 @@ class ARFortress : JavaPlugin() {
 
     private fun CommandExecutor.register(javaPlugin: JavaPlugin, command: String, vararg aliases: String) {
         javaPlugin.getCommand(command)?.setExecutor(this)
-        if (aliases.isNotEmpty()) ARFortress.INSTANCE.getCommand(command)?.aliases = aliases.toMutableList()
+        if (aliases.isNotEmpty()) javaPlugin.getCommand(command)?.aliases = aliases.toMutableList()
     }
 }

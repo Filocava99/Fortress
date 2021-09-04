@@ -1,5 +1,5 @@
-  name: "ARFortress"
-  main: "it.ancientrealms.ARFortress"
+  name: "Fortress"
+  main: "it.ancientrealms.Fortress"
   version: 1.0.0
   depend:
     - KotlinLib
@@ -8,7 +8,7 @@
   commands:
     fortress:
       aliases: arfortress
-      description: "ARFortress base command"
+      description: "Fortress base command"
   permissions:
     fortress.*:
       default: op
