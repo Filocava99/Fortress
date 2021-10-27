@@ -35,13 +35,13 @@ class FortressesManager {
     fun startSiege(fortress: FortressModel, player: Player) {
         val resident = TownyUniverse.getInstance().getResident(player.name)
         resident?.let {
-            val government = Utils.getGovernment(resident)
-            government?.let {
-                if (fortress.owner == government) {
+            val town = Utils.getTown(resident)
+            town?.let {
+                if (fortress.owner == town) {
                     throw AlreadyOwnedFortress()
                 } else {
                     val task = Bukkit.getScheduler().runTaskLaterAsynchronously(Fortress.INSTANCE, Runnable {
-                        fortress.owner = government
+                        fortress.owner = town
                         fortress.lastTimeBesieged = DateTimeFormatter.ofPattern("yyyy-MM-dd").format(
                             ZonedDateTime.now(
                                 TimeZone.getTimeZone(
@@ -55,7 +55,7 @@ class FortressesManager {
                             player.sendMessage(
                                 languageManager.getMessage(
                                     "successful-conquest-notification",
-                                    government.name,
+                                    town.name,
                                     fortress.name
                                 )
                             )
@@ -73,13 +73,13 @@ class FortressesManager {
                             }
                         }
                     }, Fortress.INSTANCE.pluginConfig.config.getLong("siege-duration"))
-                    val siege = Siege(fortress, government, HashSet<UUID>(), task)
+                    val siege = Siege(fortress, town, HashSet<UUID>(), task)
                     ongoingSieges[fortress.name] = siege
                     Bukkit.getServer().onlinePlayers.forEach { player ->
                         player.sendMessage(
                             languageManager.getMessage(
                                 "siege-start-notification",
-                                government.name,
+                                town.name,
                                 fortress.name
                             )
                         )
@@ -132,21 +132,17 @@ class FortressesManager {
 
     fun canPlayerSiege(player: Player, fortress: FortressModel): Boolean {
         val resident = TownyUniverse.getInstance().getResident(player.name)
-        val government = resident?.let { Utils.getGovernment(it) }
-        government?.let {
+        val town = resident?.town
+        town?.let {
             if (!isBesieged(fortress)) {
-                return government != fortress.owner
+                return town != fortress.owner && town.isPVP
             } else {
                 val siege = getSiege(fortress)
-                val attackers = siege?.attacker
-                return if (government is Town) {
-                    government == attackers
-                } else {
-                    if (attackers is Nation) {
-                        government == attackers || attackers.allies.contains(government)
-                    } else {
-                        false
-                    }
+                siege?.let {
+                    val attackers = siege.attacker
+                    return town.isPVP && (town == attackers || (attackers.nation != null && town.nation != null && (attackers.nation == town.nation || attackers.nation.allies.contains(
+                        town.nation
+                    ))))
                 }
             }
         }

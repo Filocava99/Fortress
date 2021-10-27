@@ -20,9 +20,11 @@ class Utils {
             )
         }
 
-        fun getGovernment(resident: Resident): Government? {
-            return if (resident.town?.hasNation() == true) resident.town.nation else resident.town
-        }
+        fun getGovernment(resident: Resident): Government? = if (resident.town?.hasNation() == true) resident.town.nation else resident.town
+
+        fun getTown(resident: Resident) = resident.town
+
+        fun getNation(resident: Resident) = resident.town.nation
 
         fun getAllPossibleParticipants(government: Government): List<Player?> {
             return if(government is Town){
