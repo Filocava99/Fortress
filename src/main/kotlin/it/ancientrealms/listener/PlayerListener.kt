@@ -39,7 +39,9 @@ class PlayerListener() : Listener {
                         fortressesManager.addParticipant(player.uniqueId, it)
                     }
                 }else if(it.canBeBesieged()){
+                    println("Cant be sieged")
                     if(fortressesManager.canPlayerSiege(player, it)){
+                        println("Player cant siege")
                         Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, Runnable {
                             if(playerNewLocation.chunk == player.location.chunk){
                                 plugin.fortressesManager.startSiege(it, player)

@@ -5,7 +5,6 @@ import org.bukkit.command.Command
 import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
 
-
 abstract class SubCommand {
 
     abstract fun getPermission(): String?

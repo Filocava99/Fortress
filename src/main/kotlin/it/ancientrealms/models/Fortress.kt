@@ -14,7 +14,7 @@ import java.util.stream.Collectors
 
 data class Fortress(
     val name: String,
-    var owner: Government?,
+    var owner: Town?,
     val chunk: Chunk,
     var besiegeHour: Int,
     var besiegeDays: Set<Int>,
@@ -22,7 +22,8 @@ data class Fortress(
     var lastTimeBesieged: String,
     val townUpkeepDiscount: Float = 0f,
     val nationUpkeepDiscount: Float = 0f,
-    val onlyCapitalGetsBonus: Boolean = false
+    val onlyCapitalGetsBonus: Boolean = false,
+    val dailyMoneyBonus: Int = 0
 ) : ConfigurationSerializable{
 
     fun canBeBesieged() : Boolean {
@@ -30,14 +31,17 @@ data class Fortress(
         val currentHour = timeZone.hour
         val lastTimeBesiegedInstant = SimpleDateFormat("yyyy-MM-dd").parse(lastTimeBesieged).toInstant()
         val currentDay = timeZone.dayOfWeek.value
+        println(besiegeDays.contains(currentDay))
+        println(besiegeHour >= currentHour)
+        println(besiegeHour < currentHour+besiegePeriod)
+        println(Instant.now().minusMillis(lastTimeBesiegedInstant.toEpochMilli()).toEpochMilli() / 1000 >= 86400)
         return besiegeDays.contains(currentDay) && besiegeHour >= currentHour && besiegeHour < currentHour+besiegePeriod && Instant.now().minusMillis(lastTimeBesiegedInstant.toEpochMilli()).toEpochMilli() / 1000 >= 86400
     }
 
     override fun serialize(): MutableMap<String, Any> {
         val data: MutableMap<String, Any> = HashMap()
         data["name"] = name
-        data["owner-type"] = if( owner == null) "" else if(owner is Town) "town" else "nation"
-        data["owner-uuid"] = if(owner != null) owner!!.uuid.toString() else ""
+        data["owner-uuid"] = if(owner != null) owner!!.getUUID().toString() else ""
         data["besiege-hour"] = besiegeHour
         data["besiege-days"] = besiegeDays.toList()
         data["besiege-period"] = besiegePeriod
@@ -46,29 +50,25 @@ data class Fortress(
         data["town-upkeep-discount"] = townUpkeepDiscount
         data["nation-upkeep-discount"] = nationUpkeepDiscount
         data["only-capital-gets-bonus"] = onlyCapitalGetsBonus
+        data["daily-money-bonus"] = dailyMoneyBonus
         return data
     }
 
     companion object{
         @JvmStatic fun deserialize(args: Map<String, Any>) : Fortress {
-            val owner: Government? = if((args["owner-type"] as String) == "nation"){
-                TownyAPI.getInstance().dataSource.getNation(UUID.fromString(args["owner-uuid"] as String))
-            }else if((args["owner-type"] as String) == "town"){
-                TownyAPI.getInstance().dataSource.getTown(UUID.fromString(args["owner-uuid"] as String))
-            }else{
-                null
-            }
+            val owner = if(args["owner-uuid"] == "") null else TownyAPI.getInstance().dataSource.getTown(UUID.fromString(args["owner-uuid"] as String))
             val name:String = args["name"] as String
             val besiegeHour: Int = args["besiege-hour"] as Int
-            val besiegeDays: Set<Int> = (args["besiege-days"] as List<*>).map { day -> Integer.parseInt(day as String) }.toSet()
+            val besiegeDays: Set<Int> = (args["besiege-days"] as List<*>).map { day -> day as Int }.toSet()
             val besiegePeriod: Int = args["besiege-period"] as Int
             val lastTimeBesieged: String = args["last-siege"] as String
             val world = Bukkit.getServer().getWorld(UUID.fromString((args["chunk"]as Map<*, *>)["world"] as String))!!
             val chunk = world.getChunkAt((args["chunk"]as Map<*, *>)["x"] as Int, (args["chunk"]as Map<*, *>)["z"] as Int)
-            val townUpkeep = args["town-upkeep-discount"] as Float
-            val nationUpkeep = args["nation-upkeep-discount"] as Float
+            val townUpkeep = (args["town-upkeep-discount"] as Double).toFloat()
+            val nationUpkeep = (args["nation-upkeep-discount"] as Double).toFloat()
             val onlyCapitalBonus = args["only-capital-gets-bonus"] as Boolean
-            return Fortress(name, owner, chunk, besiegeHour, besiegeDays, besiegePeriod, lastTimeBesieged, townUpkeep, nationUpkeep, onlyCapitalBonus)
+            val dailyMoneyBonus = args["daily-money-bonus"] as Int
+            return Fortress(name, owner, chunk, besiegeHour, besiegeDays, besiegePeriod, lastTimeBesieged, townUpkeep, nationUpkeep, onlyCapitalBonus, dailyMoneyBonus)
         }
     }
 }
