@@ -13,6 +13,10 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.*
 import it.ancientrealms.FortressModel
+import net.md_5.bungee.api.ChatMessageType
+import net.md_5.bungee.api.chat.TextComponent
+import java.time.Instant
+import kotlin.collections.HashMap
 
 class FortressesManager {
 
@@ -40,40 +44,26 @@ class FortressesManager {
                 if (fortress.owner == town) {
                     throw AlreadyOwnedFortress()
                 } else {
-                    val task = Bukkit.getScheduler().runTaskLaterAsynchronously(Fortress.INSTANCE, Runnable {
-                        fortress.owner = town
-                        fortress.lastTimeBesieged = DateTimeFormatter.ofPattern("yyyy-MM-dd").format(
-                            ZonedDateTime.now(
-                                TimeZone.getTimeZone(
-                                    Fortress.INSTANCE.pluginConfig.config.getString("time-zone")
-                                ).toZoneId()
-                            )
-                        );
-                        Fortress.INSTANCE.fortressesConfig.config.set(fortress.name, fortress)
-                        Fortress.INSTANCE.fortressesConfig.save()
-                        Bukkit.getServer().onlinePlayers.forEach { player ->
-                            player.sendMessage(
-                                languageManager.getMessage(
-                                    "successful-conquest-notification",
-                                    town.name,
-                                    fortress.name
-                                )
-                            )
-                        }
-                        val siege = ongoingSieges.remove(fortress.name)
-                        siege?.let {
-                            Utils.getAllPossibleParticipants(it.attacker).forEach { player ->
-                                player?.sendTitle(
-                                    languageManager.getMessage("siege-won-attackers-title-notification"),
-                                    languageManager.getMessage(
-                                        "siege-won-attackers-subtitle-notification",
-                                        fortress.name
-                                    ), 30, 100, 30
+                    val task = Bukkit.getScheduler().runTaskLaterAsynchronously(
+                        Fortress.INSTANCE,
+                        SiegeTask(fortress, town, ongoingSieges),
+                        Fortress.INSTANCE.pluginConfig.config.getLong("siege-duration")
+                    )
+                    val siege = Siege(fortress, town, player.uniqueId, HashSet<UUID>(), task, null)
+                    val besiegeStartTime = Instant.now().toEpochMilli()
+                    val besiegeEndTime =
+                        besiegeStartTime + Fortress.INSTANCE.pluginConfig.config.getLong("siege-duration") * 50
+                    siege.timerTask = Bukkit.getScheduler().runTaskTimerAsynchronously(Fortress.INSTANCE, Runnable {
+                        siege.participants.forEach {
+                            Bukkit.getServer().getPlayer(it)?.let { player ->
+                                val date = Date.from(Instant.ofEpochMilli(besiegeEndTime-Instant.now().toEpochMilli()))
+                                player.spigot().sendMessage(
+                                    ChatMessageType.ACTION_BAR,
+                                    *TextComponent.fromLegacyText(languageManager.getMessage("siege-timer-notification", date.minutes.toString(), date.seconds.toString()))
                                 )
                             }
                         }
-                    }, Fortress.INSTANCE.pluginConfig.config.getLong("siege-duration"))
-                    val siege = Siege(fortress, town, HashSet<UUID>(), task)
+                    }, 0, 100)
                     ongoingSieges[fortress.name] = siege
                     Bukkit.getServer().onlinePlayers.forEach { player ->
                         player.sendMessage(
@@ -93,12 +83,24 @@ class FortressesManager {
     fun endSiege(fortress: FortressModel) {
         val siege = ongoingSieges.remove(fortress.name)
         siege?.let {
-            siege.timerTask.cancel()
-            Bukkit.getServer().onlinePlayers.forEach { player -> player.sendMessage(languageManager.getMessage("unsuccessful-conquest-notification", fortress.name)) }
+            siege.endSiegeTask.cancel()
+            siege.timerTask?.cancel()
+            Bukkit.getServer().onlinePlayers.forEach { player ->
+                player.sendMessage(
+                    languageManager.getMessage(
+                        "unsuccessful-conquest-notification",
+                        fortress.name
+                    )
+                )
+            }
             Utils.getAllPossibleParticipants(it.attacker).forEach { player ->
                 player?.sendTitle(
                     languageManager.getMessage("siege-lost-attackers-title-notification"),
-                    languageManager.getMessage("siege-lost-attackers-subtitle-notification", fortress.name, fortress.owner?.name ?: ""),
+                    languageManager.getMessage(
+                        "siege-lost-attackers-subtitle-notification",
+                        fortress.name,
+                        fortress.owner?.name ?: ""
+                    ),
                     30,
                     100,
                     30
@@ -120,13 +122,19 @@ class FortressesManager {
     fun removeParticipant(uuid: UUID, fortress: FortressModel) {
         val siege = getSiege(fortress)
         siege?.let {
-            val participants = getSiege(fortress)?.participants
-            participants?.let {
+            getSiege(fortress)?.participants?.let {
                 it.remove(uuid)
                 if (it.isEmpty()) {
                     endSiege(fortress)
                 }
             }
+        }
+    }
+
+    fun addDeadParticipant(uuid: UUID, fortress: FortressModel){
+        val siege = getSiege(fortress)
+        siege?.let {
+            getSiege(fortress)?.deadParticipants?.add(uuid)
         }
     }
 
@@ -149,11 +157,64 @@ class FortressesManager {
         return false
     }
 
-    fun saveFortresses(){
+    fun saveFortresses() {
         fortressesByName.forEach { (name, fortress) ->
             Fortress.INSTANCE.fortressesConfig.config.set(name, fortress)
         }
         Fortress.INSTANCE.fortressesConfig.save()
+    }
+
+    private class SiegeTask(
+        val fortress: FortressModel,
+        val attacker: Town,
+        val ongoingSieges: HashMap<String, Siege>
+    ) : Runnable {
+        override fun run() {
+            val languageManager = Fortress.INSTANCE.languageManager
+            fortress.owner = attacker
+            fortress.lastTimeBesieged = DateTimeFormatter.ofPattern("yyyy-MM-dd").format(
+                ZonedDateTime.now(
+                    TimeZone.getTimeZone(
+                        Fortress.INSTANCE.pluginConfig.config.getString("time-zone")
+                    ).toZoneId()
+                )
+            );
+            Fortress.INSTANCE.fortressesConfig.config.set(fortress.name, fortress)
+            Fortress.INSTANCE.fortressesConfig.save()
+            Bukkit.getServer().onlinePlayers.forEach { player ->
+                player.sendMessage(
+                    languageManager.getMessage(
+                        "successful-conquest-notification",
+                        attacker.name,
+                        fortress.name
+                    )
+                )
+            }
+            val siege = ongoingSieges.remove(fortress.name)
+            siege?.let {
+                if (fortress.onlySiegeStarterGetsReward) {
+                    Bukkit.getServer()
+                        .getPlayer(it.siegeStarter)?.inventory?.addItem(*fortress.itemsReward.toTypedArray())
+                } else if (fortress.everybodyGetReward) {
+                    siege.participants.mapNotNull { uuid -> Bukkit.getServer().getPlayer(uuid) }.forEach { player ->
+                        player.inventory.addItem(*fortress.itemsReward.toTypedArray())
+                    }
+                } else {
+                    siege.participants.mapNotNull { uuid -> Bukkit.getServer().getPlayer(uuid) }.run {
+                        get(Random().nextInt(size)).inventory.addItem(*fortress.itemsReward.toTypedArray())
+                    }
+                }
+                Utils.getAllPossibleParticipants(it.attacker).forEach { player ->
+                    player?.sendTitle(
+                        languageManager.getMessage("siege-won-attackers-title-notification"),
+                        languageManager.getMessage(
+                            "siege-won-attackers-subtitle-notification",
+                            fortress.name
+                        ), 30, 100, 30
+                    )
+                }
+            }
+        }
     }
 
 }

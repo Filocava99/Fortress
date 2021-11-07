@@ -49,11 +49,13 @@ class Fortress : JavaPlugin() {
     }
 
     private fun registerCommands() {
-        MainCommand().addSubCommand(listOf("create", "new"), CreateCommand())
-            .addSubCommand(listOf("reload"), ReloadCommand())
-            .addSubCommand(listOf("setHour", "sh"), SetHourCommand())
-            .addSubCommand(listOf("help","?"), HelpCommand())
-            .register(this, "fortress", "arfortress")
+        MainCommand().apply {
+            addSubCommand(listOf("create", "new"), CreateCommand())
+            addSubCommand(listOf("reload"), ReloadCommand())
+            addSubCommand(listOf("setHour", "sh"), SetHourCommand())
+            addSubCommand(listOf("help","?"), HelpCommand())
+            addSubCommand(listOf("reward", "r"), RewardCommand())
+        }.register(this, "fortress", "arfortress")
     }
 
     private fun registerListeners() {

@@ -1,6 +1,6 @@
   name: "Fortress"
   main: "it.ancientrealms.Fortress"
-  version: 0.0.2
+  version: 0.0.4
   depend:
     - KotlinLib
   softdepend:
