@@ -6,6 +6,7 @@ import org.bukkit.Bukkit
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 import org.bukkit.event.entity.PlayerDeathEvent
+import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.event.player.PlayerMoveEvent
 import org.bukkit.scheduler.BukkitTask
 import java.util.*
@@ -59,14 +60,31 @@ class PlayerListener : Listener {
                         }, plugin.pluginConfig.config.getLong("delay-before-siege-start"))
                     }
                 } else {
-                    player.sendTitle(
-                        languageManager.getMessage("fortress-not-besiegable-title", it.name),
-                        languageManager.getMessage(
-                            "fortress-not-besiegable-subtitle", it.owner?.name ?: ""
-                        ), 20, 40, 20
-                    )
+                    if(it.owner == null){
+                        player.sendTitle(
+                            languageManager.getMessage("unconquered-fortress-not-besiegable-title", it.name),
+                            languageManager.getMessage(
+                                "unconquered-fortress-not-besiegable-subtitle", it.owner?.name ?: ""
+                            ), 20, 40, 20
+                        )
+                    }else{
+                        player.sendTitle(
+                            languageManager.getMessage("fortress-not-besiegable-title", it.name),
+                            languageManager.getMessage(
+                                "fortress-not-besiegable-subtitle", it.owner?.name ?: ""
+                            ), 20, 40, 20
+                        )
+                    }
                 }
             }
+        }
+    }
+
+    @EventHandler
+    fun onPlayerInteract(event: PlayerInteractEvent){
+        if(Utils.getFortressFromChunk(event.player.location.chunk) != null && (!event.player.isOp || event.player.hasPermission("fortress.interact"))){
+            event.isCancelled = true
+            event.player.sendMessage(languageManager.getMessage("cant-interact-inside-fortress"))
         }
     }
 
