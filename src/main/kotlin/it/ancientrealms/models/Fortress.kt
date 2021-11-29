@@ -17,9 +17,11 @@ data class Fortress(
     val name: String,
     var owner: Town?,
     val chunks: Set<Chunk>,
+    var ignoreBesiegeHour: Boolean = false,
     var besiegeHour: Int,
     var besiegeDays: Set<Int>,
     var besiegePeriod: Int,
+    var besiegeInterval: Long = 86400,
     var lastTimeBesieged: String,
     val townUpkeepDiscount: Float = 0f,
     val nationUpkeepDiscount: Float = 0f,
@@ -37,7 +39,8 @@ data class Fortress(
             ); itemMeta?.setDisplayName("${ChatColor.DARK_PURPLE}Example item")
         }),
     val everybodyGetReward: Boolean = false,
-    val onlySiegeStarterGetsReward: Boolean = false
+    val onlySiegeStarterGetsReward: Boolean = false,
+    var onConquestCommands: MutableMap<String, CommandTarget> = mutableMapOf(Pair("give \${player} DIRT 1", CommandTarget.PARTICIPANTS))
 ) : ConfigurationSerializable {
 
     fun canBeBesieged(): Boolean {
@@ -45,21 +48,29 @@ data class Fortress(
         val currentHour = timeZone.hour
         val lastTimeBesiegedInstant = SimpleDateFormat("yyyy-MM-dd").parse(lastTimeBesieged).toInstant()
         val currentDay = timeZone.dayOfWeek.value
+        var besiegeHourCheck: Boolean = false
+        besiegeHourCheck = if(ignoreBesiegeHour){
+            true
+        }else{
+            besiegeHour >= currentHour && besiegeHour < currentHour + besiegePeriod
+        }
         println(besiegeDays.contains(currentDay))
         println(besiegeHour >= currentHour)
         println(besiegeHour < currentHour + besiegePeriod)
         println(Instant.now().minusMillis(lastTimeBesiegedInstant.toEpochMilli()).toEpochMilli() / 1000 >= 86400)
-        return besiegeDays.contains(currentDay) && besiegeHour >= currentHour && besiegeHour < currentHour + besiegePeriod && Instant.now()
-            .minusMillis(lastTimeBesiegedInstant.toEpochMilli()).toEpochMilli() / 1000 >= 86400
+        return besiegeDays.contains(currentDay) && besiegeHourCheck && Instant.now()
+            .minusMillis(lastTimeBesiegedInstant.toEpochMilli()).toEpochMilli() / 1000 >= besiegeInterval
     }
 
     override fun serialize(): MutableMap<String, Any> {
         val data: MutableMap<String, Any> = HashMap()
         data["name"] = name
         data["owner-uuid"] = if (owner != null) owner!!.getUUID().toString() else ""
+        data["ignore-besiege-hour"] = ignoreBesiegeHour
         data["besiege-hour"] = besiegeHour
         data["besiege-days"] = besiegeDays.toList()
         data["besiege-period"] = besiegePeriod
+        data["besiege-interval"] = besiegeInterval
         data["last-siege"] = lastTimeBesieged
         data["chunks"] = chunks.map { chunk ->
             mapOf(
@@ -76,6 +87,7 @@ data class Fortress(
         data["items-reward"] = itemsReward
         data["everybody-get-reward"] = everybodyGetReward
         data["only-siege-starter-gets-reward"] = onlySiegeStarterGetsReward
+        data["on-conquest-commands"] = onConquestCommands.toList()
         return data
     }
 
@@ -85,9 +97,11 @@ data class Fortress(
             val owner =
                 if (args["owner-uuid"] == "") null else TownyAPI.getInstance().dataSource.getTown(UUID.fromString(args["owner-uuid"] as String))
             val name: String = args["name"] as String
+            val ignoreBesiegeHour = args["ignore-besiege-hour"] as Boolean
             val besiegeHour: Int = args["besiege-hour"] as Int
             val besiegeDays: Set<Int> = (args["besiege-days"] as List<*>).map { day -> day as Int }.toSet()
             val besiegePeriod: Int = args["besiege-period"] as Int
+            val besiegeInterval = args["besiege-interval"] as Long
             val lastTimeBesieged: String = args["last-siege"] as String
             val chunks = (args["chunks"] as List<*>).filterIsInstance<Map<*, *>>().map { map ->
                 Bukkit.getServer().getWorld(UUID.fromString(map["world"] as String))!!
@@ -104,13 +118,17 @@ data class Fortress(
                     ?: LinkedList<ItemStack>()
             val everybodyGetReward = args["everybody-get-reward"] as Boolean
             val onlySiegeStarterGetsReward = args["only-siege-starter-gets-reward"] as Boolean
+            @Suppress("UNCHECKED_CAST")
+            val onConquestCommands = (args["on-conquest-commands"] as Map<String, CommandTarget>).toMutableMap()
             return Fortress(
                 name,
                 owner,
                 chunks,
+                ignoreBesiegeHour,
                 besiegeHour,
                 besiegeDays,
                 besiegePeriod,
+                besiegeInterval,
                 lastTimeBesieged,
                 townUpkeep,
                 nationUpkeep,
@@ -119,7 +137,8 @@ data class Fortress(
                 radius,
                 itemsReward,
                 everybodyGetReward,
-                onlySiegeStarterGetsReward
+                onlySiegeStarterGetsReward,
+                onConquestCommands
             )
         }
     }

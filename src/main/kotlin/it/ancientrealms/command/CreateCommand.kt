@@ -49,10 +49,10 @@ class CreateCommand : SubCommand() {
                 name,
                 null,
                 chunks,
-                besiegeHour,
-                besiegeDays,
-                besiegePeriod,
-                lastTimeBesieged,
+                besiegeHour = besiegeHour,
+                besiegeDays = besiegeDays,
+                besiegePeriod = besiegePeriod,
+                lastTimeBesieged = lastTimeBesieged,
                 radius = radius
             )
             Fortress.INSTANCE.run{

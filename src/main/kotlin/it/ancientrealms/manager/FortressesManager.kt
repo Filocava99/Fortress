@@ -1,6 +1,7 @@
 package it.ancientrealms.manager
 
 import com.palmergames.bukkit.towny.TownyUniverse
+import com.palmergames.bukkit.towny.`object`.Government
 import com.palmergames.bukkit.towny.`object`.Nation
 import com.palmergames.bukkit.towny.`object`.Town
 import it.ancientrealms.Fortress
@@ -13,6 +14,7 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.*
 import it.ancientrealms.FortressModel
+import it.ancientrealms.models.CommandTarget
 import net.md_5.bungee.api.ChatMessageType
 import net.md_5.bungee.api.chat.TextComponent
 import java.time.Instant
@@ -171,25 +173,6 @@ class FortressesManager {
     ) : Runnable {
         override fun run() {
             val languageManager = Fortress.INSTANCE.languageManager
-            fortress.owner = attacker
-            fortress.lastTimeBesieged = DateTimeFormatter.ofPattern("yyyy-MM-dd").format(
-                ZonedDateTime.now(
-                    TimeZone.getTimeZone(
-                        Fortress.INSTANCE.pluginConfig.config.getString("time-zone")
-                    ).toZoneId()
-                )
-            );
-            Fortress.INSTANCE.fortressesConfig.config.set(fortress.name, fortress)
-            Fortress.INSTANCE.fortressesConfig.save()
-            Bukkit.getServer().onlinePlayers.forEach { player ->
-                player.sendMessage(
-                    languageManager.getMessage(
-                        "successful-conquest-notification",
-                        attacker.name,
-                        fortress.name
-                    )
-                )
-            }
             val siege = ongoingSieges.remove(fortress.name)
             siege?.let {
                 if (fortress.onlySiegeStarterGetsReward) {
@@ -213,6 +196,41 @@ class FortressesManager {
                         ), 30, 100, 30
                     )
                 }
+                fortress.onConquestCommands.entries.forEach { (k, v) ->
+                    when (v){
+                        CommandTarget.PARTICIPANTS -> it.participants.forEach { Bukkit.getServer().run {
+                            dispatchCommand(consoleSender, k.replace("\${player}", getPlayer(it)?.name ?: ""))
+                        } }
+                        CommandTarget.SIEGE_LEADER -> Bukkit.getServer().run {
+                            dispatchCommand(consoleSender, k.replace("\${player}", getPlayer(it.siegeStarter)?.name ?: ""))
+                        }
+                        CommandTarget.RANDOM_PARTICIPANT -> Bukkit.getServer().run {
+                            dispatchCommand(consoleSender, k.replace("\${player}", getPlayer(it.participants.random())?.name ?: ""))
+                        }
+                        CommandTarget.DEFENDERS -> Utils.getAllPossibleParticipants(fortress.owner as Government).forEach { Bukkit.getServer().run {
+                            dispatchCommand(consoleSender, k.replace("\${player}", it?.name ?: ""))
+                        } }
+                    }
+                }
+            }
+            fortress.owner = attacker
+            fortress.lastTimeBesieged = DateTimeFormatter.ofPattern("yyyy-MM-dd").format(
+                ZonedDateTime.now(
+                    TimeZone.getTimeZone(
+                        Fortress.INSTANCE.pluginConfig.config.getString("time-zone")
+                    ).toZoneId()
+                )
+            );
+            Fortress.INSTANCE.fortressesConfig.config.set(fortress.name, fortress)
+            Fortress.INSTANCE.fortressesConfig.save()
+            Bukkit.getServer().onlinePlayers.forEach { player ->
+                player.sendMessage(
+                    languageManager.getMessage(
+                        "successful-conquest-notification",
+                        attacker.name,
+                        fortress.name
+                    )
+                )
             }
         }
     }
