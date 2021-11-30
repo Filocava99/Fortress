@@ -26,7 +26,7 @@ pipelines:
               variables:
                 USER: $sftp_test_username
                 SERVER: $sftp_test_url
-                REMOTE_PATH: '/home/container/plugins/Fortress.jar'
+                REMOTE_PATH: 'plugins/Fortress.jar'
                 LOCAL_PATH: 'build/libs/*.jar'
                 # SSH_KEY: '<string>' # Optional.
                 PASSWORD: $sftp_test_password
