@@ -8,7 +8,7 @@
 image: gradle:6.6.0
 
 pipelines:
-  default:
+  test:
     - parallel:
       - step:
           name: Build and Test
@@ -39,7 +39,8 @@ pipelines:
             # Run a security scan for sensitive data.
             # See more security tools at https://bitbucket.org/product/features/pipelines/integrations?&category=security
             - pipe: atlassian/git-secrets-scan:0.5.1
-  deploy:
+ pipelines:
+  production:
     - parallel:
       - step:
           name: Build and Test
