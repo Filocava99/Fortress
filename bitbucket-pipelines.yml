@@ -22,12 +22,13 @@ pipelines:
                 BITBUCKET_USERNAME: $username
                 BITBUCKET_APP_PASSWORD: $password
                 FILENAME: 'build/libs/*.jar'
+            - mv build/libs/*.jar build/libs/Fortress.jar
             - pipe: atlassian/sftp-deploy:0.5.8
               variables:
                 USER: $sftp_test_username
                 SERVER: $sftp_test_url
                 REMOTE_PATH: 'plugins/'
-                LOCAL_PATH: 'build/libs/*.jar'
+                LOCAL_PATH: 'build/libs/Fortress.jar'
                 # SSH_KEY: '<string>' # Optional.
                 PASSWORD: $sftp_test_password
                 EXTRA_ARGS: $sftp_test_port_argument
