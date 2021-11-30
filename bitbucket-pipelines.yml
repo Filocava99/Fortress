@@ -30,7 +30,7 @@ pipelines:
                 LOCAL_PATH: 'build/libs/*.jar'
                 # SSH_KEY: '<string>' # Optional.
                 PASSWORD: $sftp_test_password
-                # EXTRA_ARGS: '<string>' # Optional.
+                EXTRA_ARGS: $sftp_test_port_argument
                 # DEBUG: '<boolean>' # Optional.
       - step:
           name: Security Scan
