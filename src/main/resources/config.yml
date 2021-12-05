@@ -4,3 +4,4 @@ delay-before-siege-kick: 20
 delay-before-siege-start: 0
 siege-duration: 20
 time-zone: "Europe/Rome"
+notify-blocked-interaction: false

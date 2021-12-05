@@ -12,6 +12,7 @@ import java.text.SimpleDateFormat
 import java.time.Instant
 import java.time.ZonedDateTime
 import java.util.*
+import kotlin.collections.HashMap
 
 data class Fortress(
     val name: String,
@@ -21,7 +22,7 @@ data class Fortress(
     var besiegeHour: Int,
     var besiegeDays: Set<Int>,
     var besiegePeriod: Int,
-    var besiegeInterval: Long = 86400,
+    var besiegeInterval: Int = 86400,
     var lastTimeBesieged: String,
     val townUpkeepDiscount: Float = 0f,
     val nationUpkeepDiscount: Float = 0f,
@@ -30,7 +31,7 @@ data class Fortress(
     val radius: Int = 0,
     var itemsReward: MutableList<ItemStack> = mutableListOf(
         ItemStack(
-            Material.BIRCH_PLANKS,
+            Material.DIRT,
             32
         ).apply {
             itemMeta?.lore = listOf(
@@ -40,7 +41,7 @@ data class Fortress(
         }),
     val everybodyGetReward: Boolean = false,
     val onlySiegeStarterGetsReward: Boolean = false,
-    var onConquestCommands: MutableMap<String, CommandTarget> = mutableMapOf(Pair("give \${player} DIRT 1", CommandTarget.PARTICIPANTS))
+    var onConquestCommands: MutableMap<CommandTarget, MutableList<String>> = mutableMapOf(Pair(CommandTarget.PARTICIPANTS, mutableListOf("give \${player} DIRT 1")))
 ) : ConfigurationSerializable {
 
     fun canBeBesieged(): Boolean {
@@ -48,8 +49,7 @@ data class Fortress(
         val currentHour = timeZone.hour
         val lastTimeBesiegedInstant = SimpleDateFormat("yyyy-MM-dd").parse(lastTimeBesieged).toInstant()
         val currentDay = timeZone.dayOfWeek.value
-        var besiegeHourCheck: Boolean = false
-        besiegeHourCheck = if(ignoreBesiegeHour){
+        val besiegeHourCheck = if(ignoreBesiegeHour){
             true
         }else{
             besiegeHour >= currentHour && besiegeHour < currentHour + besiegePeriod
@@ -87,7 +87,11 @@ data class Fortress(
         data["items-reward"] = itemsReward
         data["everybody-get-reward"] = everybodyGetReward
         data["only-siege-starter-gets-reward"] = onlySiegeStarterGetsReward
-        data["on-conquest-commands"] = onConquestCommands.toList()
+        val commands = HashMap<String, Any>()
+        data["on-conquest-commands"] = commands
+        onConquestCommands.keys.forEach { target ->
+            commands[target.name] = onConquestCommands[target] ?: emptyList<String>()
+        }
         return data
     }
 
@@ -101,7 +105,7 @@ data class Fortress(
             val besiegeHour: Int = args["besiege-hour"] as Int
             val besiegeDays: Set<Int> = (args["besiege-days"] as List<*>).map { day -> day as Int }.toSet()
             val besiegePeriod: Int = args["besiege-period"] as Int
-            val besiegeInterval = args["besiege-interval"] as Long
+            val besiegeInterval: Int = args["besiege-interval"] as Int
             val lastTimeBesieged: String = args["last-siege"] as String
             val chunks = (args["chunks"] as List<*>).filterIsInstance<Map<*, *>>().map { map ->
                 Bukkit.getServer().getWorld(UUID.fromString(map["world"] as String))!!
@@ -118,8 +122,9 @@ data class Fortress(
                     ?: LinkedList<ItemStack>()
             val everybodyGetReward = args["everybody-get-reward"] as Boolean
             val onlySiegeStarterGetsReward = args["only-siege-starter-gets-reward"] as Boolean
+            val onConquestCommands = HashMap<CommandTarget, MutableList<String>>()
             @Suppress("UNCHECKED_CAST")
-            val onConquestCommands = (args["on-conquest-commands"] as Map<String, CommandTarget>).toMutableMap()
+            (args["on-conquest-commands"] as Map<String, List<String>>).entries.forEach { (target, commands) -> onConquestCommands[CommandTarget.valueOf(target)] = commands.toMutableList()}
             return Fortress(
                 name,
                 owner,

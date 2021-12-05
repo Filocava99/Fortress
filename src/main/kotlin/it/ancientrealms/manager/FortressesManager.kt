@@ -58,10 +58,17 @@ class FortressesManager {
                     siege.timerTask = Bukkit.getScheduler().runTaskTimerAsynchronously(Fortress.INSTANCE, Runnable {
                         siege.participants.forEach {
                             Bukkit.getServer().getPlayer(it)?.let { player ->
-                                val date = Date.from(Instant.ofEpochMilli(besiegeEndTime-Instant.now().toEpochMilli()))
+                                val date =
+                                    Date.from(Instant.ofEpochMilli(besiegeEndTime - Instant.now().toEpochMilli()))
                                 player.spigot().sendMessage(
                                     ChatMessageType.ACTION_BAR,
-                                    *TextComponent.fromLegacyText(languageManager.getMessage("siege-timer-notification", date.minutes.toString(), date.seconds.toString()))
+                                    *TextComponent.fromLegacyText(
+                                        languageManager.getMessage(
+                                            "siege-timer-notification",
+                                            date.minutes.toString(),
+                                            date.seconds.toString()
+                                        )
+                                    )
                                 )
                             }
                         }
@@ -133,7 +140,7 @@ class FortressesManager {
         }
     }
 
-    fun addDeadParticipant(uuid: UUID, fortress: FortressModel){
+    fun addDeadParticipant(uuid: UUID, fortress: FortressModel) {
         val siege = getSiege(fortress)
         siege?.let {
             getSiege(fortress)?.deadParticipants?.add(uuid)
@@ -197,19 +204,41 @@ class FortressesManager {
                     )
                 }
                 fortress.onConquestCommands.entries.forEach { (k, v) ->
-                    when (v){
-                        CommandTarget.PARTICIPANTS -> it.participants.forEach { Bukkit.getServer().run {
-                            dispatchCommand(consoleSender, k.replace("\${player}", getPlayer(it)?.name ?: ""))
-                        } }
-                        CommandTarget.SIEGE_LEADER -> Bukkit.getServer().run {
-                            dispatchCommand(consoleSender, k.replace("\${player}", getPlayer(it.siegeStarter)?.name ?: ""))
+                    when (k) {
+                        CommandTarget.PARTICIPANTS -> v.forEach { command ->
+                            it.participants.forEach {
+                                Bukkit.getServer().run {
+                                    dispatchCommand(
+                                        consoleSender,
+                                        command.replace("\${player}", getPlayer(it)?.name ?: "")
+                                    )
+                                }
+                            }
                         }
-                        CommandTarget.RANDOM_PARTICIPANT -> Bukkit.getServer().run {
-                            dispatchCommand(consoleSender, k.replace("\${player}", getPlayer(it.participants.random())?.name ?: ""))
+                        CommandTarget.SIEGE_LEADER -> v.forEach { command ->
+                            Bukkit.getServer().run {
+                                dispatchCommand(
+                                    consoleSender,
+                                    command.replace("\${player}", getPlayer(it.siegeStarter)?.name ?: "")
+                                )
+                            }
                         }
-                        CommandTarget.DEFENDERS -> Utils.getAllPossibleParticipants(fortress.owner as Government).forEach { Bukkit.getServer().run {
-                            dispatchCommand(consoleSender, k.replace("\${player}", it?.name ?: ""))
-                        } }
+                        CommandTarget.RANDOM_PARTICIPANT -> v.forEach { command ->
+                            Bukkit.getServer().run {
+                                dispatchCommand(
+                                    consoleSender,
+                                    command.replace("\${player}", getPlayer(it.participants.random())?.name ?: "")
+                                )
+                            }
+                        }
+                        CommandTarget.DEFENDERS -> v.forEach { command ->
+                            Utils.getAllPossibleParticipants(fortress.owner as Government)
+                                .forEach {
+                                    Bukkit.getServer().run {
+                                        dispatchCommand(consoleSender, command.replace("\${player}", it?.name ?: ""))
+                                    }
+                                }
+                        }
                     }
                 }
             }

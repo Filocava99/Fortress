@@ -3,6 +3,7 @@ package it.ancientrealms.listener
 import it.ancientrealms.Fortress
 import it.ancientrealms.utils.Utils
 import org.bukkit.Bukkit
+import org.bukkit.Material
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 import org.bukkit.event.entity.PlayerDeathEvent
@@ -11,6 +12,7 @@ import org.bukkit.event.player.PlayerMoveEvent
 import org.bukkit.scheduler.BukkitTask
 import java.util.*
 import kotlin.collections.HashMap
+import kotlin.contracts.Returns
 
 class PlayerListener : Listener {
 
@@ -82,9 +84,14 @@ class PlayerListener : Listener {
 
     @EventHandler
     fun onPlayerInteract(event: PlayerInteractEvent){
-        if(Utils.getFortressFromChunk(event.player.location.chunk) != null && (!event.player.isOp || event.player.hasPermission("fortress.interact"))){
+        if(event.clickedBlock == null || event.clickedBlock?.blockData?.material == Material.AIR) return
+        if(event.player.isOp) return
+        if(event.player.hasPermission("fortress.interact")) return
+        if(Utils.getFortressFromChunk(event.player.location.chunk) != null){
             event.isCancelled = true
-            event.player.sendMessage(languageManager.getMessage("cant-interact-inside-fortress"))
+            if(Fortress.INSTANCE.pluginConfig.config.getBoolean("notify-blocked-interaction")){
+                event.player.sendMessage(languageManager.getMessage("cant-interact-inside-fortress"))
+            }
         }
     }
 
