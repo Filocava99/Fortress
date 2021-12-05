@@ -54,7 +54,7 @@ class FortressesManager {
                     val siege = Siege(fortress, town, player.uniqueId, HashSet<UUID>(), task, null)
                     val besiegeStartTime = Instant.now().toEpochMilli()
                     val besiegeEndTime =
-                        besiegeStartTime + Fortress.INSTANCE.pluginConfig.config.getLong("siege-duration") * 50
+                        besiegeStartTime + Fortress.INSTANCE.pluginConfig.config.getLong("siege-duration") / 20 * 1000
                     siege.timerTask = Bukkit.getScheduler().runTaskTimerAsynchronously(Fortress.INSTANCE, Runnable {
                         siege.participants.forEach {
                             Bukkit.getServer().getPlayer(it)?.let { player ->

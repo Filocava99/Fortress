@@ -47,6 +47,7 @@ class PlayerListener : Listener {
                     if (fortressesManager.canPlayerSiege(player, it)) {
                         fortressesManager.addParticipant(player.uniqueId, it)
                     }
+                    //TODO else { sendMessage(Fortress under siege) }
                 } else if (it.canBeBesieged()) {
                     if (fortressesManager.canPlayerSiege(player, it)) {
                         player.sendTitle(
