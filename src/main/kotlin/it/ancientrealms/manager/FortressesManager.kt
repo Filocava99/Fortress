@@ -182,6 +182,7 @@ class FortressesManager {
             val languageManager = Fortress.INSTANCE.languageManager
             val siege = ongoingSieges.remove(fortress.name)
             siege?.let {
+                it.timerTask?.cancel()
                 if (fortress.onlySiegeStarterGetsReward) {
                     Bukkit.getServer()
                         .getPlayer(it.siegeStarter)?.inventory?.addItem(*fortress.itemsReward.toTypedArray())
