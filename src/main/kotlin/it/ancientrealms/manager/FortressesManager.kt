@@ -46,7 +46,7 @@ class FortressesManager {
                 if (fortress.owner == town) {
                     throw AlreadyOwnedFortress()
                 } else {
-                    val task = Bukkit.getScheduler().runTaskLaterAsynchronously(
+                    val task = Bukkit.getScheduler().runTaskLater(
                         Fortress.INSTANCE,
                         SiegeTask(fortress, town, ongoingSieges),
                         Fortress.INSTANCE.pluginConfig.config.getLong("siege-duration")
