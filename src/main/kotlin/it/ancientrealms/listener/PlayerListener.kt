@@ -17,8 +17,10 @@ import kotlin.contracts.Returns
 class PlayerListener : Listener {
 
     private val plugin = Fortress.INSTANCE
-    private val tasks = HashMap<UUID, BukkitTask>()
+    private val tasks = HashMap<UUID, Pair<UUID, BukkitTask>>()
+    private val townsWithRunningTask = HashSet<UUID>()
     private val languageManager = Fortress.INSTANCE.languageManager
+    private val kickTasks = HashMap<UUID, BukkitTask>()
 
     @EventHandler
     fun onPlayerMove(event: PlayerMoveEvent) {
@@ -32,22 +34,40 @@ class PlayerListener : Listener {
             val fortressesManager = plugin.fortressesManager
             Utils.getFortressFromChunk(playerOldLocation.chunk)?.let {
                 if (fortressesManager.isBesieged(it)) {
-                    val task = tasks.remove(player.uniqueId)
+                    Utils.getResident(player)?.let { it1 -> Utils.getTown(it1) }
+                    val task = kickTasks.remove(player.uniqueId)
                     task?.cancel()
-                    tasks[player.uniqueId] =
+                    kickTasks[player.uniqueId] =
                         Bukkit.getScheduler().runTaskLaterAsynchronously(Fortress.INSTANCE, Runnable {
                             if (!it.chunks.contains(player.location.chunk)) {
                                 fortressesManager.removeParticipant(player.uniqueId, it)
                             }
                         }, plugin.pluginConfig.config.getLong("delay-before-siege-kick"))
+                } else {
+                    tasks.remove(player.uniqueId)?.let { pair ->
+                        townsWithRunningTask.remove(pair.first)
+                        pair.second.cancel()
+                    }
                 }
             }
             Utils.getFortressFromChunk(playerNewLocation.chunk)?.let {
                 if (fortressesManager.isBesieged(it)) {
                     if (fortressesManager.canPlayerSiege(player, it)) {
                         fortressesManager.addParticipant(player.uniqueId, it)
+                    } else {
+                        val siege = fortressesManager.getSiege(it)
+                        player.sendTitle(
+                            languageManager.getMessage("fortress-under-siege-title", it.name),
+                            languageManager.getMessage(
+                                "fortress-under-siege-subtitle",
+                                siege?.attacker?.name ?: "",
+                                it.owner?.name ?: ""
+                            ),
+                            20,
+                            40,
+                            20
+                        )
                     }
-                    //TODO else { sendMessage(Fortress under siege) }
                 } else if (it.canBeBesieged()) {
                     if (fortressesManager.canPlayerSiege(player, it)) {
                         player.sendTitle(
@@ -56,21 +76,29 @@ class PlayerListener : Listener {
                                 "fortress-besiegable-subtitle"
                             ), 20, 40, 20
                         )
-                        Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, Runnable {
-                            if (playerNewLocation.chunk == player.location.chunk) {
-                                plugin.fortressesManager.startSiege(it, player)
+                        Utils.getResident(player)?.town?.let { town ->
+                            if (!townsWithRunningTask.contains(town.getUUID())) {
+                                tasks[player.uniqueId] = Pair(
+                                    town.getUUID(),
+                                    Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, Runnable {
+                                        if (playerNewLocation.chunk == player.location.chunk) {
+                                            plugin.fortressesManager.startSiege(it, player)
+                                        }
+                                    }, plugin.pluginConfig.config.getLong("delay-before-siege-start"))
+                                )
+                                townsWithRunningTask.add(town.getUUID())
                             }
-                        }, plugin.pluginConfig.config.getLong("delay-before-siege-start"))
+                        }
                     }
                 } else {
-                    if(it.owner == null){
+                    if (it.owner == null) {
                         player.sendTitle(
                             languageManager.getMessage("unconquered-fortress-not-besiegable-title", it.name),
                             languageManager.getMessage(
                                 "unconquered-fortress-not-besiegable-subtitle", it.owner?.name ?: ""
                             ), 20, 40, 20
                         )
-                    }else{
+                    } else {
                         player.sendTitle(
                             languageManager.getMessage("fortress-not-besiegable-title", it.name),
                             languageManager.getMessage(
@@ -84,25 +112,25 @@ class PlayerListener : Listener {
     }
 
     @EventHandler
-    fun onPlayerInteract(event: PlayerInteractEvent){
-        if(event.clickedBlock == null || event.clickedBlock?.blockData?.material == Material.AIR) return
-        if(event.player.isOp) return
-        if(event.player.hasPermission("fortress.interact")) return
-        if(Utils.getFortressFromChunk(event.player.location.chunk) != null){
+    fun onPlayerInteract(event: PlayerInteractEvent) {
+        if (event.clickedBlock == null || event.clickedBlock?.blockData?.material == Material.AIR) return
+        if (event.player.isOp) return
+        if (event.player.hasPermission("fortress.interact")) return
+        if (Utils.getFortressFromChunk(event.player.location.chunk) != null) {
             event.isCancelled = true
-            if(Fortress.INSTANCE.pluginConfig.config.getBoolean("notify-blocked-interaction")){
+            if (Fortress.INSTANCE.pluginConfig.config.getBoolean("notify-blocked-interaction")) {
                 event.player.sendMessage(languageManager.getMessage("cant-interact-inside-fortress"))
             }
         }
     }
 
     @EventHandler
-    fun onPlayerDeath(event: PlayerDeathEvent){
+    fun onPlayerDeath(event: PlayerDeathEvent) {
         val player = event.entity
         val location = player.location
         Utils.getFortressFromChunk(location.chunk)?.let { fortress ->
             val fortressesManager = Fortress.INSTANCE.fortressesManager
-            if(fortressesManager.isBesieged(fortress)){
+            if (fortressesManager.isBesieged(fortress)) {
                 fortressesManager.removeParticipant(player.uniqueId, fortress)
                 fortressesManager.addDeadParticipant(player.uniqueId, fortress)
             }

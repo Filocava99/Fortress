@@ -1,5 +1,8 @@
 package it.ancientrealms.utils
 
+import com.palmergames.bukkit.towny.Towny
+import com.palmergames.bukkit.towny.TownyAPI
+import com.palmergames.bukkit.towny.TownyUniverse
 import com.palmergames.bukkit.towny.`object`.Government
 import com.palmergames.bukkit.towny.`object`.Nation
 import com.palmergames.bukkit.towny.`object`.Resident
@@ -40,6 +43,8 @@ class Utils {
                 list
             }
         }
+
+        fun getResident(player: Player) = TownyUniverse.getInstance().getResident(player.name)
     }
 
 }

@@ -159,6 +159,8 @@ class FortressesManager {
                     val attackers = siege.attacker
                     return town.isPVP && (town == attackers || (attackers.nation != null && town.nation != null && (attackers.nation == town.nation || attackers.nation.allies.contains(
                         town.nation
+                    ) && !siege.participants.contains(
+                        player.uniqueId
                     ))))
                 }
             }
