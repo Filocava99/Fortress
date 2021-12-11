@@ -29,18 +29,6 @@ data class Fortress(
     val onlyCapitalGetsBonus: Boolean = false,
     val dailyMoneyBonus: Int = 0,
     val radius: Int = 0,
-    var itemsReward: MutableList<ItemStack> = mutableListOf(
-        ItemStack(
-            Material.DIRT,
-            32
-        ).apply {
-            itemMeta?.lore = listOf(
-                "${ChatColor.RED}Example 1",
-                "${ChatColor.GREEN}Example 2"
-            ); itemMeta?.setDisplayName("${ChatColor.DARK_PURPLE}Example item")
-        }),
-    val everybodyGetReward: Boolean = false,
-    val onlySiegeStarterGetsReward: Boolean = false,
     var onConquestCommands: MutableMap<CommandTarget, MutableList<String>> = mutableMapOf(Pair(CommandTarget.PARTICIPANTS, mutableListOf("give \${player} DIRT 1")))
 ) : ConfigurationSerializable {
 
@@ -84,9 +72,6 @@ data class Fortress(
         data["only-capital-gets-bonus"] = onlyCapitalGetsBonus
         data["daily-money-bonus"] = dailyMoneyBonus
         data["radius"] = radius
-        data["items-reward"] = itemsReward
-        data["everybody-get-reward"] = everybodyGetReward
-        data["only-siege-starter-gets-reward"] = onlySiegeStarterGetsReward
         val commands = HashMap<String, Any>()
         data["on-conquest-commands"] = commands
         onConquestCommands.keys.forEach { target ->
@@ -131,12 +116,6 @@ data class Fortress(
             val onlyCapitalBonus = args["only-capital-gets-bonus"] as Boolean
             val dailyMoneyBonus = args["daily-money-bonus"] as Int
             val radius = args["radius"] as Int
-            val tempList = args["items-reward"] as List<*>
-            val itemsReward =
-                tempList.filterIsInstance<ItemStack>().takeIf { it.size == tempList.size }?.toMutableList()
-                    ?: LinkedList<ItemStack>()
-            val everybodyGetReward = args["everybody-get-reward"] as Boolean
-            val onlySiegeStarterGetsReward = args["only-siege-starter-gets-reward"] as Boolean
             val onConquestCommands = HashMap<CommandTarget, MutableList<String>>()
             @Suppress("UNCHECKED_CAST")
             (args["on-conquest-commands"] as Map<String, List<String>>).entries.forEach { (target, commands) -> onConquestCommands[CommandTarget.valueOf(target)] = commands.toMutableList()}
@@ -155,9 +134,6 @@ data class Fortress(
                 onlyCapitalBonus,
                 dailyMoneyBonus,
                 radius,
-                itemsReward,
-                everybodyGetReward,
-                onlySiegeStarterGetsReward,
                 onConquestCommands
             )
         }

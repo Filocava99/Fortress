@@ -149,19 +149,23 @@ class FortressesManager {
 
     fun canPlayerSiege(player: Player, fortress: FortressModel): Boolean {
         val resident = TownyUniverse.getInstance().getResident(player.name)
-        val town = resident?.town
-        town?.let {
-            if (!isBesieged(fortress)) {
-                return town != fortress.owner && town.isPVP
-            } else {
-                val siege = getSiege(fortress)
-                siege?.let {
-                    val attackers = siege.attacker
-                    return town.isPVP && (town == attackers || (attackers.nation != null && town.nation != null && (attackers.nation == town.nation || attackers.nation.allies.contains(
-                        town.nation
-                    ) && !siege.participants.contains(
-                        player.uniqueId
-                    ))))
+        resident?.let {
+            if (it.hasTown()) {
+                val town = it.town
+                town?.let {
+                    if (!isBesieged(fortress)) {
+                        return town != fortress.owner && town.isPVP
+                    } else {
+                        val siege = getSiege(fortress)
+                        siege?.let {
+                            val attackers = siege.attacker
+                            return town.isPVP && (town == attackers || (attackers.nation != null && town.nation != null && (attackers.nation == town.nation || attackers.nation.allies.contains(
+                                town.nation
+                            ) && !siege.participants.contains(
+                                player.uniqueId
+                            ))))
+                        }
+                    }
                 }
             }
         }
@@ -185,18 +189,6 @@ class FortressesManager {
             val siege = ongoingSieges.remove(fortress.name)
             siege?.let {
                 it.timerTask?.cancel()
-                if (fortress.onlySiegeStarterGetsReward) {
-                    Bukkit.getServer()
-                        .getPlayer(it.siegeStarter)?.inventory?.addItem(*fortress.itemsReward.toTypedArray())
-                } else if (fortress.everybodyGetReward) {
-                    siege.participants.mapNotNull { uuid -> Bukkit.getServer().getPlayer(uuid) }.forEach { player ->
-                        player.inventory.addItem(*fortress.itemsReward.toTypedArray())
-                    }
-                } else {
-                    siege.participants.mapNotNull { uuid -> Bukkit.getServer().getPlayer(uuid) }.run {
-                        get(Random().nextInt(size)).inventory.addItem(*fortress.itemsReward.toTypedArray())
-                    }
-                }
                 Utils.getAllPossibleParticipants(it.attacker).forEach { player ->
                     player?.sendTitle(
                         languageManager.getMessage("siege-won-attackers-title-notification"),
