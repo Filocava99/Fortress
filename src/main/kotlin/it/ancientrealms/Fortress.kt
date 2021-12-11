@@ -28,7 +28,7 @@ class Fortress : JavaPlugin() {
         loadData()
     }
 
-    private fun initManagers(){
+    private fun initManagers() {
         languageManager = LanguageManager()
         fortressesManager = FortressesManager()
     }
@@ -41,7 +41,7 @@ class Fortress : JavaPlugin() {
         pluginConfig = Config("config.yml", this)
     }
 
-    fun loadData(){
+    fun loadData() {
         fortressesConfig = Config("fortresses.yml", this)
         fortressesConfig.config.getKeys(false)
             .forEach { key -> fortressesManager.addFortress(key, fortressesConfig.config.get(key) as FortressModel) }
@@ -53,8 +53,7 @@ class Fortress : JavaPlugin() {
             addSubCommand(listOf("create", "new"), CreateCommand())
             addSubCommand(listOf("reload"), ReloadCommand())
             addSubCommand(listOf("setHour", "sh"), SetHourCommand())
-            addSubCommand(listOf("help","?"), HelpCommand())
-            addSubCommand(listOf("reward", "r"), RewardCommand())
+            addSubCommand(listOf("help", "?"), HelpCommand())
         }.register(this, "fortress", "arfortress")
     }
 
