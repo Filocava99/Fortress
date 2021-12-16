@@ -29,23 +29,26 @@ data class Fortress(
     val onlyCapitalGetsBonus: Boolean = false,
     val dailyMoneyBonus: Int = 0,
     val radius: Int = 0,
-    var onConquestCommands: MutableMap<CommandTarget, MutableList<String>> = mutableMapOf(Pair(CommandTarget.PARTICIPANTS, mutableListOf("give \${player} DIRT 1")))
+    var onConquestCommands: MutableMap<CommandTarget, MutableList<String>> = mutableMapOf(Pair(CommandTarget.PARTICIPANTS, mutableListOf("give \${player} DIRT 1"))),
+    var notOwnable: Boolean = false
 ) : ConfigurationSerializable {
 
     fun canBeBesieged(): Boolean {
         val timeZone = ZonedDateTime.now(TimeZone.getTimeZone("Europe/Rome").toZoneId())
         val currentHour = timeZone.hour
-        val lastTimeBesiegedInstant = SimpleDateFormat("yyyy-MM-dd").parse(lastTimeBesieged).toInstant()
+        val lastTimeBesiegedInstant = SimpleDateFormat("yyyy-MM-dd-H:m").parse(lastTimeBesieged).toInstant()
         val currentDay = timeZone.dayOfWeek.value
         val besiegeHourCheck = if(ignoreBesiegeHour){
             true
         }else{
             besiegeHour >= currentHour && besiegeHour < currentHour + besiegePeriod
         }
+        /*
         println(besiegeDays.contains(currentDay))
-        println(besiegeHour >= currentHour)
+        println(besiegeHourCheck)
         println(besiegeHour < currentHour + besiegePeriod)
-        println(Instant.now().minusMillis(lastTimeBesiegedInstant.toEpochMilli()).toEpochMilli() / 1000 >= 86400)
+        println(Instant.now().minusMillis(lastTimeBesiegedInstant.toEpochMilli()).toEpochMilli() / 1000 >= besiegeInterval)
+        */
         return besiegeDays.contains(currentDay) && besiegeHourCheck && Instant.now()
             .minusMillis(lastTimeBesiegedInstant.toEpochMilli()).toEpochMilli() / 1000 >= besiegeInterval
     }
@@ -77,6 +80,7 @@ data class Fortress(
         onConquestCommands.keys.forEach { target ->
             commands[target.name] = onConquestCommands[target] ?: emptyList<String>()
         }
+        data["not-ownable"] = notOwnable
         return data
     }
 
@@ -119,6 +123,7 @@ data class Fortress(
             val onConquestCommands = HashMap<CommandTarget, MutableList<String>>()
             @Suppress("UNCHECKED_CAST")
             (args["on-conquest-commands"] as Map<String, List<String>>).entries.forEach { (target, commands) -> onConquestCommands[CommandTarget.valueOf(target)] = commands.toMutableList()}
+            val notOwnable = args["not-ownable"] as Boolean
             return Fortress(
                 name,
                 owner,
@@ -134,7 +139,8 @@ data class Fortress(
                 onlyCapitalBonus,
                 dailyMoneyBonus,
                 radius,
-                onConquestCommands
+                onConquestCommands,
+                notOwnable
             )
         }
     }

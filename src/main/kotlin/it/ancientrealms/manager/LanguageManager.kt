@@ -20,6 +20,7 @@ class LanguageManager {
         args.forEachIndexed { index, arg ->
             message = message.replace("\${${index}}", arg)
         }
+        message = message.replace("_", " ")
         return message
     }
 

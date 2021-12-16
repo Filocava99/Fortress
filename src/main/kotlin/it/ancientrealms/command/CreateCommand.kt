@@ -40,9 +40,10 @@ class CreateCommand : SubCommand() {
             val besiegeHour = Integer.parseInt(args[2])
             val besiegeDays = args[3].split(",").map { it -> Integer.parseInt(it) }.toSet()
             val besiegePeriod = Integer.parseInt(args[4])
-            val lastTimeBesieged = SimpleDateFormat("yyyy-MM-dd").format(
+            val oneDayInMillis = 86400000L
+            val lastTimeBesieged = SimpleDateFormat("yyyy-MM-dd-H:m").format(
                 Date.from(
-                    Calendar.getInstance().time.toInstant().minusMillis(100000)
+                    Calendar.getInstance().time.toInstant().minusMillis(oneDayInMillis)
                 )
             )
             val fortress = FortressModel(
