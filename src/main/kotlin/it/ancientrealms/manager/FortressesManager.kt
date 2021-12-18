@@ -103,17 +103,30 @@ class FortressesManager {
                 )
             }
             Utils.getAllPossibleParticipants(it.attacker).forEach { player ->
-                player?.sendTitle(
-                    languageManager.getMessage("siege-lost-attackers-title-notification"),
-                    languageManager.getMessage(
-                        "siege-lost-attackers-subtitle-notification",
-                        fortress.name,
-                        fortress.owner?.name ?: ""
-                    ),
-                    30,
-                    100,
-                    30
-                )
+                if(siege.fortress.owner == null){
+                    player?.sendTitle(
+                        languageManager.getMessage("unconquered-siege-lost-attackers-title-notification"),
+                        languageManager.getMessage(
+                            "unconquered-siege-lost-attackers-subtitle-notification",
+                            fortress.name
+                        ),
+                        30,
+                        100,
+                        30
+                    )
+                }else{
+                    player?.sendTitle(
+                        languageManager.getMessage("siege-lost-attackers-title-notification"),
+                        languageManager.getMessage(
+                            "siege-lost-attackers-subtitle-notification",
+                            fortress.name,
+                            fortress.owner?.name ?: ""
+                        ),
+                        30,
+                        100,
+                        30
+                    )
+                }
             }
             ongoingSieges.remove(fortress.name)
         }
