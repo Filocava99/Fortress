@@ -115,7 +115,6 @@ class FortressesManager {
                     30
                 )
             }
-            ongoingSieges.remove(fortress.name)
         }
     }
 
