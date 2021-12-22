@@ -110,6 +110,17 @@ class PlayerListener : Listener {
                                 }
                             }
                         }
+                    }else{
+                        val resident = Utils.getResident(player)
+                        val town = resident?.let{Utils.getTown(resident)}
+                        if(resident != null && town != null){
+                            if(!town.isPVP){
+                                player.sendMessage(languageManager.getMessage("town-must-have-pvp-on"))
+                            }
+                            Unit
+                        }else{
+                            player.sendMessage(languageManager.getMessage("must-have-a-town-to-start-siege"))
+                        }
                     }
                 } else {
                     if (it.owner == null) {
