@@ -128,7 +128,6 @@ class FortressesManager {
                     )
                 }
             }
-            ongoingSieges.remove(fortress.name)
         }
     }
 
@@ -253,7 +252,7 @@ class FortressesManager {
             if(!fortress.notOwnable){
                 fortress.owner = attacker
             }
-            fortress.lastTimeBesieged = DateTimeFormatter.ofPattern("yyyy-MM-dd").format(
+            fortress.lastTimeBesieged = DateTimeFormatter.ofPattern("yyyy-MM-dd-H:m").format(
                 ZonedDateTime.now(
                     TimeZone.getTimeZone(
                         Fortress.INSTANCE.pluginConfig.config.getString("time-zone")
