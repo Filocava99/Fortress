@@ -1,5 +1,7 @@
 package it.ancientrealms.listener
 
+import com.palmergames.bukkit.towny.TownyAPI
+import com.palmergames.bukkit.towny.TownyUniverse
 import com.palmergames.bukkit.towny.`object`.Town
 import com.palmergames.bukkit.towny.event.NationUpkeepCalculationEvent
 import com.palmergames.bukkit.towny.event.NewDayEvent
@@ -18,9 +20,7 @@ class TownyListener : Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     fun onNewDay(@Suppress("UNUSED_PARAMETER") event: NewDayEvent) {
         Fortress.INSTANCE.fortressesManager.getFortresses().filter { fortress -> fortress.owner != null }.forEach {
-            it.owner?.let { town ->
-                town.depositToBank(town.mayor, it.dailyMoneyBonus)
-            }
+            it.owner?.collect(it.dailyMoneyBonus.toDouble())
         }
     }
 
