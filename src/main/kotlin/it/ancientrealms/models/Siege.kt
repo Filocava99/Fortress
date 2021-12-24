@@ -11,6 +11,6 @@ data class Siege(
     val siegeStarter: UUID,
     val participants: MutableSet<UUID>,
     var endSiegeTask: BukkitTask,
-    var timerTask: BukkitTask?,
+    var timerTasks: MutableSet<BukkitTask> = HashSet(),
     val deadParticipants: MutableSet<UUID> = HashSet()
 )

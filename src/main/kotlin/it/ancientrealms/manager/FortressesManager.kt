@@ -2,7 +2,6 @@ package it.ancientrealms.manager
 
 import com.palmergames.bukkit.towny.TownyUniverse
 import com.palmergames.bukkit.towny.`object`.Government
-import com.palmergames.bukkit.towny.`object`.Nation
 import com.palmergames.bukkit.towny.`object`.Town
 import it.ancientrealms.Fortress
 import it.ancientrealms.exception.AlreadyOwnedFortress
@@ -17,7 +16,9 @@ import it.ancientrealms.FortressModel
 import it.ancientrealms.models.CommandTarget
 import net.md_5.bungee.api.ChatMessageType
 import net.md_5.bungee.api.chat.TextComponent
+import org.bukkit.scheduler.BukkitTask
 import java.time.Instant
+import java.util.concurrent.TimeUnit
 import kotlin.collections.HashMap
 
 class FortressesManager {
@@ -51,11 +52,13 @@ class FortressesManager {
                         SiegeTask(fortress, town, ongoingSieges),
                         Fortress.INSTANCE.pluginConfig.config.getLong("siege-duration")
                     )
-                    val siege = Siege(fortress, town, player.uniqueId, HashSet<UUID>(), task, null)
+                    val siege = Siege(fortress, town, player.uniqueId, HashSet<UUID>(), task)
+                    val siegeDurationInTicks = Fortress.INSTANCE.pluginConfig.config.getLong("siege-duration")
+                    val siegeDurationInMillis = siegeDurationInTicks / 20 * 1000
                     val besiegeStartTime = Instant.now().toEpochMilli()
                     val besiegeEndTime =
-                        besiegeStartTime + Fortress.INSTANCE.pluginConfig.config.getLong("siege-duration") / 20 * 1000
-                    siege.timerTask = Bukkit.getScheduler().runTaskTimerAsynchronously(Fortress.INSTANCE, Runnable {
+                        besiegeStartTime + siegeDurationInMillis
+                    siege.timerTasks.add(Bukkit.getScheduler().runTaskTimerAsynchronously(Fortress.INSTANCE, Runnable {
                         siege.participants.forEach {
                             Bukkit.getServer().getPlayer(it)?.let { player ->
                                 val date =
@@ -72,7 +75,28 @@ class FortressesManager {
                                 )
                             }
                         }
-                    }, 0, 100)
+                    }, 0, 100))
+                    val quarterSiegeTime = siegeDurationInTicks / 4
+                    var remainingTime = siegeDurationInMillis
+                    siege.timerTasks.add(Bukkit.getScheduler().runTaskTimerAsynchronously(Fortress.INSTANCE, Runnable {
+                        remainingTime -= quarterSiegeTime / 20 * 1000
+                        val hours = TimeUnit.MILLISECONDS.toHours(remainingTime)
+                        val minutes = TimeUnit.MILLISECONDS.toMinutes(remainingTime) -
+                                TimeUnit.HOURS.toMinutes(TimeUnit.MILLISECONDS.toHours(remainingTime))
+                        val seconds = TimeUnit.MILLISECONDS.toSeconds(remainingTime) -
+                                TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(remainingTime))
+                        Bukkit.getServer().onlinePlayers.forEach {
+                            it.sendMessage(
+                                languageManager.getMessage(
+                                    "global-remaining-siege-message",
+                                    fortress.name,
+                                    hours.toString(),
+                                    minutes.toString(),
+                                    seconds.toString()
+                                )
+                            )
+                        }
+                    }, quarterSiegeTime, quarterSiegeTime))
                     ongoingSieges[fortress.name] = siege
                     Bukkit.getServer().onlinePlayers.forEach { player ->
                         player.sendMessage(
@@ -89,11 +113,11 @@ class FortressesManager {
         }
     }
 
-    fun endSiege(fortress: FortressModel) {
+    private fun endSiege(fortress: FortressModel) {
         val siege = ongoingSieges.remove(fortress.name)
-        siege?.let {
+        siege?.let { it ->
             siege.endSiegeTask.cancel()
-            siege.timerTask?.cancel()
+            siege.timerTasks.forEach(BukkitTask::cancel)
             Bukkit.getServer().onlinePlayers.forEach { player ->
                 player.sendMessage(
                     languageManager.getMessage(
@@ -103,7 +127,7 @@ class FortressesManager {
                 )
             }
             Utils.getAllPossibleParticipants(it.attacker).forEach { player ->
-                if(siege.fortress.owner == null){
+                if (siege.fortress.owner == null) {
                     player?.sendTitle(
                         languageManager.getMessage("unconquered-siege-lost-attackers-title-notification"),
                         languageManager.getMessage(
@@ -114,7 +138,7 @@ class FortressesManager {
                         100,
                         30
                     )
-                }else{
+                } else {
                     player?.sendTitle(
                         languageManager.getMessage("siege-lost-attackers-title-notification"),
                         languageManager.getMessage(
@@ -200,7 +224,7 @@ class FortressesManager {
             val languageManager = Fortress.INSTANCE.languageManager
             val siege = ongoingSieges.remove(fortress.name)
             siege?.let {
-                it.timerTask?.cancel()
+                it.timerTasks.forEach(BukkitTask::cancel)
                 Utils.getAllPossibleParticipants(it.attacker).forEach { player ->
                     player?.sendTitle(
                         languageManager.getMessage("siege-won-attackers-title-notification"),
@@ -249,7 +273,7 @@ class FortressesManager {
                     }
                 }
             }
-            if(!fortress.notOwnable){
+            if (!fortress.notOwnable) {
                 fortress.owner = attacker
             }
             fortress.lastTimeBesieged = DateTimeFormatter.ofPattern("yyyy-MM-dd-H:m").format(
