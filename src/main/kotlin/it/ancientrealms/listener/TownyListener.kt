@@ -1,14 +1,11 @@
 package it.ancientrealms.listener
 
-import com.palmergames.bukkit.towny.TownyAPI
-import com.palmergames.bukkit.towny.TownyUniverse
 import com.palmergames.bukkit.towny.`object`.Town
 import com.palmergames.bukkit.towny.event.NationUpkeepCalculationEvent
-import com.palmergames.bukkit.towny.event.NewDayEvent
+import com.palmergames.bukkit.towny.event.PreNewDayEvent
 import com.palmergames.bukkit.towny.event.TownUpkeepCalculationEvent
 import com.palmergames.bukkit.towny.event.town.TownRuinedEvent
 import com.palmergames.bukkit.towny.event.town.toggle.TownTogglePVPEvent
-import com.palmergames.bukkit.towny.exceptions.NotRegisteredException
 import it.ancientrealms.Fortress
 import it.ancientrealms.utils.Utils
 import org.bukkit.event.EventHandler
@@ -18,7 +15,7 @@ import org.bukkit.event.Listener
 class TownyListener : Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
-    fun onNewDay(@Suppress("UNUSED_PARAMETER") event: NewDayEvent) {
+    fun onNewDay(@Suppress("UNUSED_PARAMETER") event: PreNewDayEvent) {
         Fortress.INSTANCE.fortressesManager.getFortresses().filter { fortress -> fortress.owner != null }.forEach {
             it.owner?.collect(it.dailyMoneyBonus.toDouble())
         }

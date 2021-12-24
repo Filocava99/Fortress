@@ -2,12 +2,13 @@ import org.apache.tools.ant.filters.ReplaceTokens
 
 plugins {
     id 'java'
-    id 'org.jetbrains.kotlin.jvm' version '1.5.21'
+    id 'org.jetbrains.kotlin.jvm' version '1.6.10'
     id 'com.github.johnrengelman.shadow' version '6.0.0'
 }
 
 group 'it.ancientrealms'
 version '0.0.8'
+project.setArchivesBaseName("Fortress")
 
 repositories {
     mavenCentral()
@@ -27,6 +28,10 @@ shadowJar {
         exclude(dependency('com.github.TownyAdvanced:Towny:.*'))
         exclude(dependency('org.spigotmc:spigot-api:.*'))
     }
+}
+
+tasks.jar {
+    archiveFileName.set("Fortress.jar")
 }
 
 processResources {

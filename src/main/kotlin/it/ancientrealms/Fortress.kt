@@ -54,6 +54,7 @@ class Fortress : JavaPlugin() {
             addSubCommand(listOf("reload"), ReloadCommand())
             addSubCommand(listOf("setHour", "sh"), SetHourCommand())
             addSubCommand(listOf("help", "?"), HelpCommand())
+            addSubCommand(listOf("info"), InfoCommand())
         }.register(this, "fortress", "arfortress")
     }
 
