@@ -85,16 +85,31 @@ class FortressesManager {
                                 TimeUnit.HOURS.toMinutes(TimeUnit.MILLISECONDS.toHours(remainingTime))
                         val seconds = TimeUnit.MILLISECONDS.toSeconds(remainingTime) -
                                 TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(remainingTime))
-                        Bukkit.getServer().onlinePlayers.forEach {
-                            it.sendMessage(
-                                languageManager.getMessage(
-                                    "global-remaining-siege-message",
-                                    fortress.name,
-                                    hours.toString(),
-                                    minutes.toString(),
-                                    seconds.toString()
-                                )
-                            )
+                        if (hours != 0L || minutes != 0L || seconds != 0L) {
+                            if (hours > 0) {
+                                Bukkit.getServer().onlinePlayers.forEach {
+                                    it.sendMessage(
+                                        languageManager.getMessage(
+                                            "global-remaining-siege-message-with-hours",
+                                            fortress.name,
+                                            hours.toString(),
+                                            minutes.toString(),
+                                            seconds.toString()
+                                        )
+                                    )
+                                }
+                            } else {
+                                Bukkit.getServer().onlinePlayers.forEach {
+                                    it.sendMessage(
+                                        languageManager.getMessage(
+                                            "global-remaining-siege-message-with-minutes",
+                                            fortress.name,
+                                            minutes.toString(),
+                                            seconds.toString()
+                                        )
+                                    )
+                                }
+                            }
                         }
                     }, quarterSiegeTime, quarterSiegeTime))
                     ongoingSieges[fortress.name] = siege
@@ -108,6 +123,16 @@ class FortressesManager {
                         )
                     }
                     addParticipant(player.uniqueId, fortress)
+                    fortress.chunks.forEach { chunk ->
+                        run {
+                            chunk.entities.filterIsInstance<Player>()
+                                .forEach { playerInChunk ->
+                                    if (canPlayerSiege(playerInChunk, fortress)) {
+                                        addParticipant(playerInChunk.uniqueId, fortress)
+                                    }
+                                }
+                        }
+                    }
                 }
             }
         }
@@ -187,7 +212,7 @@ class FortressesManager {
         val resident = TownyUniverse.getInstance().getResident(player.name)
         resident?.let {
             if (it.hasTown()) {
-                val town = it.town
+                val town = Utils.getTown(it)
                 town?.let {
                     if (!isBesieged(fortress)) {
                         return town != fortress.owner && town.isPVP
@@ -195,8 +220,10 @@ class FortressesManager {
                         val siege = getSiege(fortress)
                         siege?.let {
                             val attackers = siege.attacker
-                            return town.isPVP && (town == attackers || (attackers.nation != null && town.nation != null && (attackers.nation == town.nation || attackers.nation.allies.contains(
-                                town.nation
+                            val attackersNation = Utils.getNation(attackers)
+                            val townNation = Utils.getNation(town)
+                            return town.isPVP && (town == attackers || (attackersNation != null && townNation != null && (attackersNation == townNation || attackersNation.allies.contains(
+                                townNation
                             ) && !siege.participants.contains(
                                 player.uniqueId
                             ))))
