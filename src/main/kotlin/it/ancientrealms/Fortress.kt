@@ -42,6 +42,7 @@ class Fortress : JavaPlugin() {
     }
 
     fun loadData() {
+        fortressesManager.removeAllFortresses()
         fortressesConfig = Config("fortresses.yml", this)
         fortressesConfig.config.getKeys(false)
             .forEach { key -> fortressesManager.addFortress(key, fortressesConfig.config.get(key) as FortressModel) }
@@ -55,6 +56,8 @@ class Fortress : JavaPlugin() {
             addSubCommand(listOf("setHour", "sh"), SetHourCommand())
             addSubCommand(listOf("help", "?"), HelpCommand())
             addSubCommand(listOf("info"), InfoCommand())
+            addSubCommand(listOf("setowner"), SetOwnerCommand())
+            addSubCommand(listOf("clearchunk", "cc", "clear"), ClearChunkCommand())
         }.register(this, "fortress", "arfortress")
     }
 

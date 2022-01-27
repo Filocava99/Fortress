@@ -2,33 +2,29 @@ package it.ancientrealms.listener
 
 import it.ancientrealms.Fortress
 import it.ancientrealms.utils.Utils
+import jdk.jshell.execution.Util
 import org.bukkit.Bukkit
-import org.bukkit.Material
 import org.bukkit.entity.Player
 import org.bukkit.event.Cancellable
-import org.bukkit.event.Event
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 import org.bukkit.event.block.BlockBreakEvent
 import org.bukkit.event.block.BlockPlaceEvent
 import org.bukkit.event.entity.PlayerDeathEvent
-import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.event.player.PlayerMoveEvent
+import org.bukkit.event.player.PlayerQuitEvent
+import org.bukkit.event.player.PlayerTeleportEvent
 import org.bukkit.scheduler.BukkitTask
 import java.text.DateFormatSymbols
 import java.text.SimpleDateFormat
-import java.time.DayOfWeek
 import java.time.Instant
-import java.time.temporal.TemporalAccessor
 import java.util.*
-import kotlin.collections.HashMap
-import kotlin.contracts.Returns
 
 class PlayerListener : Listener {
 
     private val plugin = Fortress.INSTANCE
     private val tasks = HashMap<UUID, Pair<UUID, BukkitTask>>()
-    private val townsWithRunningTask = HashSet<UUID>()
+    private val fortressesWithRunningTasks = HashSet<String>()
     private val languageManager = Fortress.INSTANCE.languageManager
     private val kickTasks = HashMap<UUID, BukkitTask>()
 
@@ -55,7 +51,7 @@ class PlayerListener : Listener {
                         }, plugin.pluginConfig.config.getLong("delay-before-siege-kick"))
                 } else {
                     tasks.remove(player.uniqueId)?.let { pair ->
-                        townsWithRunningTask.remove(pair.first)
+                        fortressesWithRunningTasks.remove(it.name)
                         pair.second.cancel()
                     }
                 }
@@ -97,16 +93,17 @@ class PlayerListener : Listener {
                     if (fortressesManager.canPlayerSiege(player, it)) {
                         Utils.getResident(player)?.let { it1 ->
                             Utils.getTown(it1)?.let { town ->
-                                if (!townsWithRunningTask.contains(town.getUUID())) {
+                                if (!fortressesWithRunningTasks.contains(it.name)) {
                                     tasks[player.uniqueId] = Pair(
                                         town.getUUID(),
                                         Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, Runnable {
                                             if (playerNewLocation.chunk == player.location.chunk) {
                                                 plugin.fortressesManager.startSiege(it, player)
                                             }
+                                            fortressesWithRunningTasks.remove(it.name)
                                         }, plugin.pluginConfig.config.getLong("delay-before-siege-start"))
                                     )
-                                    townsWithRunningTask.add(town.getUUID())
+                                    fortressesWithRunningTasks.add(it.name)
                                 }
                             }
                         }
@@ -139,15 +136,30 @@ class PlayerListener : Listener {
                         )
                     }
                     val lastTimeBesiegedInstant = SimpleDateFormat("yyyy-MM-dd-H:m").parse(it.lastTimeBesieged).toInstant()
-                    val date = Date.from(Instant.ofEpochMilli(Instant.now().toEpochMilli() - (lastTimeBesiegedInstant.toEpochMilli()-it.besiegeInterval*1000)))
+                    val intervalInMillis = 0L.coerceAtLeast(
+                        (it.besiegeInterval * 1000) - (Instant.now()
+                            .toEpochMilli() - (lastTimeBesiegedInstant.toEpochMilli()))
+                    )
+                    val date = Date.from(Instant.ofEpochMilli(intervalInMillis))
                     if(it.ignoreBesiegeHour){
                         player.sendMessage(languageManager.getMessage("besiegable-in-interval", date.hours.toString(), date.minutes.toString()))
                     }else{
-                        val weekdays = DateFormatSymbols.getInstance(Locale(plugin.pluginConfig.config.getString("language"))).weekdays
+                        //TODO Get Locale from config
+                        //Weekdays start with Sunday. Need to find a workaround
+                        val weekdays = DateFormatSymbols.getInstance(Locale.ITALIAN).weekdays
                         var days = ""
-                        it.besiegeDays.forEachIndexed{ index, day ->
-                            days += weekdays[index]
-                            if(it.besiegeDays.size > 1 && index+1 < it.besiegeDays.size){
+                        it.besiegeDays.forEach{ day ->
+                            days += when(day) {
+                                1 -> "Lunedì"
+                                2 -> "Martedì"
+                                3 -> "Mercoledì"
+                                4 -> "Giovedì"
+                                5 -> "Venerdì"
+                                6 -> "Sabato"
+                                7 -> "Domenica"
+                                else -> ""
+                            }
+                            if(it.besiegeDays.size > 1 && day < it.besiegeDays.size){
                                 days += ", "
                             }
                         }
@@ -175,6 +187,32 @@ class PlayerListener : Listener {
             event.isCancelled = true
             if (Fortress.INSTANCE.pluginConfig.config.getBoolean("notify-blocked-interaction")) {
                 player.sendMessage(languageManager.getMessage("cant-interact-inside-fortress"))
+            }
+        }
+    }
+
+    @EventHandler
+    fun onPlayerQuit(event: PlayerQuitEvent) {
+        val location = event.player.location
+        Utils.getFortressFromChunk(location.chunk)?.let { fortress ->
+            val fortressesManager = Fortress.INSTANCE.fortressesManager
+            if (fortressesManager.isBesieged(fortress)) {
+                fortressesManager.removeParticipant(event.player.uniqueId, fortress)
+            }
+        }
+    }
+
+    @EventHandler
+    fun onPlayerTeleport(event: PlayerTeleportEvent){
+        val fortress = Utils.getFortressFromChunk(event.from.chunk)
+        if(fortress != null){
+            val fortressesManager = Fortress.INSTANCE.fortressesManager
+            if(event.to != null){
+                if(Utils.getFortressFromChunk(event.to!!.chunk) != fortress){
+                    fortressesManager.removeParticipant(event.player.uniqueId, fortress)
+                }
+            }else{
+                fortressesManager.removeParticipant(event.player.uniqueId, fortress)
             }
         }
     }

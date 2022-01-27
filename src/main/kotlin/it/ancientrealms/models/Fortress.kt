@@ -39,9 +39,9 @@ data class Fortress(
         val lastTimeBesiegedInstant = SimpleDateFormat("yyyy-MM-dd-H:m").parse(lastTimeBesieged).toInstant()
         val currentDay = timeZone.dayOfWeek.value
         val besiegeHourCheck = if(ignoreBesiegeHour){
-            true
+            Instant.now().toEpochMilli() - lastTimeBesiegedInstant.toEpochMilli()>= besiegeInterval * 1000
         }else{
-            besiegeHour >= currentHour && besiegeHour < currentHour + besiegePeriod
+            besiegeHour <= currentHour && besiegeHour < currentHour + besiegePeriod
         }
         /*
         println(besiegeDays.contains(currentDay))
@@ -49,8 +49,7 @@ data class Fortress(
         println(besiegeHour < currentHour + besiegePeriod)
         println(Instant.now().minusMillis(lastTimeBesiegedInstant.toEpochMilli()).toEpochMilli() / 1000 >= besiegeInterval)
         */
-        return besiegeDays.contains(currentDay) && besiegeHourCheck && Instant.now()
-            .minusMillis(lastTimeBesiegedInstant.toEpochMilli()).toEpochMilli() / 1000 >= besiegeInterval
+        return besiegeDays.contains(currentDay) && besiegeHourCheck
     }
 
     override fun serialize(): MutableMap<String, Any> {

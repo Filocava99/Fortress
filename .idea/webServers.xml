@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="f6563a52-c372-4c27-98cb-f496a71fcc09" name="Beta">
+        <fileTransfer accessType="SFTP" host="panel.ancientrealms.it" port="8006" sshConfigId="aaa28265-2c2a-48fc-8287-a067119902a5" sshConfig="tigierrei.24a34a28@panel.ancientrealms.it:8006 password">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" keepAliveTimeout="0" passiveMode="true" shareSSLContext="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>

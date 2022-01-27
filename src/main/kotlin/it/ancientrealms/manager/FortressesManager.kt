@@ -29,7 +29,6 @@ class FortressesManager {
     private val languageManager = Fortress.INSTANCE.languageManager
 
     fun getFortresses() = Collections.unmodifiableSet(fortresses)
-
     fun removeFortress(name: String) = fortresses.remove(fortressesByName.remove(name))
 
     fun getFortress(name: String) = fortressesByName[name]
@@ -37,6 +36,11 @@ class FortressesManager {
     fun addFortress(name: String, fortress: FortressModel) {
         fortresses.add(fortress)
         fortressesByName[name] = fortress
+    }
+
+    fun removeAllFortresses(){
+        fortresses.clear()
+        fortressesByName.clear()
     }
 
     fun startSiege(fortress: FortressModel, player: Player) {
@@ -125,7 +129,7 @@ class FortressesManager {
                     addParticipant(player.uniqueId, fortress)
                     fortress.chunks.forEach { chunk ->
                         run {
-                            chunk.entities.filterIsInstance<Player>()
+                            chunk.entities.filterIsInstance<Player>().filter { it.uniqueId != player.uniqueId }
                                 .forEach { playerInChunk ->
                                     if (canPlayerSiege(playerInChunk, fortress)) {
                                         addParticipant(playerInChunk.uniqueId, fortress)
