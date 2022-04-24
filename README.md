@@ -1,1 +1,2 @@
 # Fortress
+A Spigot plugin
